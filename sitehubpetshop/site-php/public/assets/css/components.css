@@ -1,0 +1,751 @@
+.btn-primario {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--raio-botao);
+  background: var(--cor-secundaria);
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.btn-primario:disabled { opacity: .7; cursor: not-allowed; }
+
+.btn-outline {
+  padding: 10px 18px;
+  border-radius: var(--raio-botao);
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--raio-card);
+  padding: 15px;
+}
+
+.painel-branco {
+  background: #fff;
+  border-radius: var(--raio-painel) var(--raio-painel) 0 0;
+  padding: 20px;
+  flex: 1;
+}
+
+.campo {
+  margin-bottom: 16px;
+}
+.campo label {
+  display: block;
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 6px;
+}
+.campo input,
+.campo select {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--raio-input);
+  background: var(--cor-fundo-input);
+  font-size: 15px;
+  font-family: var(--fonte-base);
+  box-sizing: border-box;
+}
+.campo input:focus,
+.campo select:focus {
+  outline: 2px solid var(--cor-primaria-clara);
+}
+
+.campo-linha {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 360px) {
+  .campo-linha { grid-template-columns: 1fr; }
+}
+
+.campo-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #555;
+}
+.campo-checkbox input { margin-top: 3px; }
+
+.link-secundario {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  color: #666;
+}
+.link-secundario a {
+  color: var(--cor-primaria);
+  font-weight: bold;
+  text-decoration: none;
+}
+.link-secundario a:hover { text-decoration: underline; }
+
+.snackbar {
+  position: fixed;
+  left: 16px; right: 16px; bottom: 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+  animation: snackbar-subir .2s ease-out;
+  z-index: 1000;
+  max-width: 420px;
+  margin: 0 auto;
+  font-family: var(--fonte-base);
+}
+.snackbar.erro { background: var(--cor-erro); }
+.snackbar.sucesso { background: var(--cor-sucesso); }
+.snackbar.aviso { background: var(--cor-aviso); }
+@keyframes snackbar-subir {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.spinner {
+  width: 32px; height: 32px;
+  margin: 40px auto;
+  border: 3px solid rgba(0, 0, 0, .1);
+  border-top-color: var(--cor-primaria);
+  border-radius: 50%;
+  animation: spinner-girar .8s linear infinite;
+}
+@keyframes spinner-girar { to { transform: rotate(360deg); } }
+
+.texto-erro {
+  color: var(--cor-erro);
+  text-align: center;
+  margin: 20px 0 10px;
+}
+.texto-vazio {
+  color: var(--cor-texto-secundario);
+  text-align: center;
+  margin: 20px 0;
+}
+
+/* ── Categorias da Home: ícone circular + rótulo (estilo loja virtual) ── */
+.grade-categorias {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 22px;
+  margin-bottom: 8px;
+}
+.categoria-card {
+  border: none;
+  background: none;
+  padding: 0;
+  width: 112px;
+  text-align: center;
+  cursor: pointer;
+  font-family: var(--fonte-base);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.categoria-card .icone {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.categoria-card .nome { font-weight: bold; font-size: 14px; color: #333; line-height: 1.25; }
+/* Paleta da marca: roxo predominante com pontos em laranja. */
+.categoria-card.cat-racoes     .icone { background: #F3E5F5; color: #6A0DAD; }
+.categoria-card.cat-petiscos   .icone { background: #FFE9CC; color: #FF9800; }
+.categoria-card.cat-higiene    .icone { background: #EDE1F7; color: #4A148C; }
+.categoria-card.cat-brinquedos .icone { background: #FFE0B2; color: #E65100; }
+.categoria-card.cat-servicos   .icone { background: #E6D6F0; color: #6A1B9A; }
+.categoria-card:hover .icone { filter: brightness(.96); }
+
+/* ── Listas de itens (petshops, pets, produtos, pedidos, agendamentos) ── */
+.item-lista {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--cor-cinza-card);
+  border-radius: var(--raio-card);
+  padding: 14px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: var(--fonte-base);
+}
+.item-lista .icone {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--cor-primaria-clara);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.estrela {
+  display: inline-flex;
+  vertical-align: -3px;
+  color: var(--cor-secundaria);
+  margin-right: 2px;
+}
+.item-lista .conteudo { flex: 1; min-width: 0; }
+.item-lista .titulo { font-weight: bold; font-size: 15px; margin: 0 0 2px; }
+.item-lista .subtitulo { font-size: 13px; color: var(--cor-texto-secundario); margin: 0; }
+.item-lista .seta { color: var(--cor-texto-secundario); font-size: 18px; }
+.item-lista .preco { font-weight: bold; color: var(--cor-primaria); white-space: nowrap; }
+
+.badge-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+}
+.badge-status.confirmado { background: var(--cor-sucesso); }
+.badge-status.pendente   { background: var(--cor-aviso); }
+.badge-status.concluido  { background: var(--cor-primaria); }
+
+/* ── Barra fixa de carrinho ───────────────────────────────────── */
+.barra-carrinho {
+  position: fixed;
+  left: 16px; right: 16px; bottom: 16px;
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--cor-primaria);
+  color: #fff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+.barra-carrinho .qtd {
+  background: var(--cor-secundaria);
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.quantidade-controle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.quantidade-controle button {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--cor-fundo-input);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.linha-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  margin: 8px 0;
+}
+.linha-total.total-final {
+  font-weight: bold;
+  font-size: 18px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+/* ── Botão "Entrar" no cabeçalho (visitante sem login) ───────────── */
+.btn-entrar {
+  background: var(--cor-secundaria);
+  color: #fff;
+  border: none;
+  border-radius: var(--raio-botao);
+  padding: 8px 16px;
+  font-weight: bold;
+  font-size: 13px;
+  font-family: var(--fonte-base);
+  cursor: pointer;
+  letter-spacing: .5px;
+}
+
+/* ── Modal "você precisa entrar" ─────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 2000;
+}
+.modal-caixa {
+  position: relative;
+  background: #fff;
+  border-radius: var(--raio-login-card);
+  padding: 32px 24px 24px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--sombra-card);
+}
+.modal-mensagem {
+  color: #444;
+  margin: 12px 0 20px;
+  font-size: 15px;
+}
+.modal-caixa .btn-outline.modal-btn-cadastro {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 10px;
+  color: var(--cor-primaria);
+}
+.modal-fechar {
+  position: absolute;
+  top: 10px; right: 14px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+}
+
+/* ── Menu superior estilo loja virtual (logo + busca + carrinho/conta) ── */
+.navbar-loja {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+}
+.navbar-loja__conteudo {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.navbar-loja__marca {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.navbar-loja__marca img {
+  height: 56px;
+  width: auto;
+  display: block;
+}
+.campo-busca {
+  flex: 1;
+  display: flex;
+  max-width: 560px;
+  background: var(--cor-fundo-input);
+  border-radius: var(--raio-botao);
+  overflow: hidden;
+}
+.campo-busca input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: var(--fonte-base);
+  outline: none;
+}
+.campo-busca button {
+  border: none;
+  background: var(--cor-primaria);
+  color: #fff;
+  width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.campo-busca button:hover { background: var(--cor-primaria-clara); }
+.navbar-loja__acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.navbar-loja__saudacao {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--cor-primaria-escura);
+  white-space: nowrap;
+}
+.navbar-loja .btn-icone {
+  background: var(--cor-fundo-input);
+  color: var(--cor-primaria);
+}
+.navbar-loja .btn-icone:hover { background: #ececec; }
+.btn-icone-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.btn-icone-wrap .badge-carrinho {
+  position: absolute;
+  top: -4px; right: -4px;
+  background: var(--cor-secundaria);
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+.btn-icone-wrap .badge-carrinho[hidden] { display: none; }
+
+.navbar-loja__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #555;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  padding: 4px 2px;
+}
+.navbar-loja__link:hover { color: var(--cor-primaria); }
+.navbar-loja__link .icone-svg { color: var(--cor-primaria); }
+
+/* Perfilzinho de "Minha conta" — mesmo estilo dos links acima, mas fica
+   visível também no mobile (é o único jeito de chegar em minha-conta.html). */
+.navbar-loja__perfil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #555;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  padding: 4px 2px;
+}
+.navbar-loja__perfil:hover { color: var(--cor-primaria); }
+.navbar-loja__perfil .icone-svg { color: var(--cor-primaria); }
+.topo-interno .navbar-loja__perfil { color: rgba(255, 255, 255, .92); }
+.topo-interno .navbar-loja__perfil .icone-svg { color: #fff; }
+
+.navbar-loja .btn-entrar {
+  border-radius: var(--raio-botao);
+}
+
+/* ── Barra de links secundária (Serviços, Lojas, Meus pedidos...) ────── */
+.navbar-loja__pills {
+  border-top: 1px solid #F0F0F0;
+}
+.navbar-loja__pills-conteudo {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.navbar-loja__pills-conteudo::-webkit-scrollbar { display: none; }
+.pill-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #E6E6E6;
+  border-radius: 12px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #444;
+  font-family: var(--fonte-base);
+  font-size: 13px;
+  font-weight: bold;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pill-nav:hover { border-color: var(--cor-primaria-clara); color: var(--cor-primaria); }
+.pill-nav .icone-svg { flex-shrink: 0; }
+
+@media (max-width: 640px) {
+  .navbar-loja__conteudo { flex-wrap: wrap; padding: 12px 16px; }
+  .navbar-loja__marca img { height: 42px; }
+  .campo-busca { order: 3; max-width: 100%; flex-basis: 100%; }
+  .navbar-loja__saudacao { display: none; }
+  .navbar-loja__link { display: none; }
+}
+
+/* ── Banner promocional da Home ───────────────────────────────────── */
+.hero-banner {
+  background: linear-gradient(120deg, #F3E5F5, #E1F5FE);
+  border-radius: var(--raio-card);
+  padding: 26px 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.hero-banner h1 {
+  margin: 0 0 4px;
+  color: var(--cor-primaria-escura);
+  font-size: 22px;
+}
+.hero-banner p {
+  margin: 0;
+  color: #555;
+  font-size: 14px;
+}
+
+/* ── Conteúdo em largura de site (centralizado, com respiro nas bordas) ── */
+.painel-branco--largo {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Catálogo de produtos: grade estilo loja virtual ─────────────────── */
+.catalogo-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.grade-produtos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+}
+.produto-card {
+  background: #fff;
+  border: 1px solid #ECECEC;
+  border-radius: var(--raio-card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  width: 100%;
+  max-width: 260px;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.produto-card:hover {
+  border-color: #E0E0E0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .08);
+}
+.produto-card__imagem {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.produto-card__imagem.cat-racoes     { background: #F3E5F5; color: #6A0DAD; }
+.produto-card__imagem.cat-petiscos   { background: #FFE9CC; color: #FF9800; }
+.produto-card__imagem.cat-higiene    { background: #EDE1F7; color: #4A148C; }
+.produto-card__imagem.cat-brinquedos { background: #FFE0B2; color: #E65100; }
+.produto-card__avaliacao {
+  position: absolute;
+  top: 8px; left: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 8px 3px 6px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
+}
+.produto-card__avaliacao .estrela { color: var(--cor-secundaria); }
+.produto-card__nome {
+  font-weight: bold;
+  font-size: 14px;
+  margin: 0 0 4px;
+  line-height: 1.3;
+  min-height: 36px;
+  color: #333;
+}
+.produto-card__loja {
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.produto-card__rodape {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.produto-card__preco {
+  font-weight: bold;
+  color: var(--cor-primaria);
+  font-size: 15px;
+}
+.produto-card__add {
+  border: none;
+  background: var(--cor-primaria);
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.produto-card__add:hover { background: var(--cor-primaria-clara); }
+
+/* ── Grade de petshops (mesmo layout do catálogo de produtos) ────────── */
+.petshop-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #ECECEC;
+  border-radius: var(--raio-card);
+  padding: 14px;
+  width: 100%;
+  max-width: 260px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.petshop-card:hover {
+  border-color: #E0E0E0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .08);
+}
+.petshop-card__icone {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: #F3E5F5;
+  color: #6A0DAD;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.petshop-card__nome {
+  font-weight: bold;
+  font-size: 15px;
+  margin: 0 0 6px;
+  color: #333;
+}
+/* ── Opções selecionáveis do checkout (endereço, forma de pagamento) ── */
+.opcao-radio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid var(--cor-fundo-input);
+  border-radius: var(--raio-card);
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.opcao-radio.selecionada {
+  border-color: var(--cor-primaria);
+  background: #F8F1FB;
+}
+.opcao-radio input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cor-primaria);
+  flex-shrink: 0;
+}
+.opcao-radio__icone {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--cor-fundo-input);
+  color: var(--cor-primaria);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.opcao-radio__texto { flex: 1; min-width: 0; }
+.opcao-radio__texto strong { display: block; font-size: 14px; }
+.opcao-radio__texto small { color: var(--cor-texto-secundario); font-size: 12px; }
+
+.petshop-card__meta {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+/* ── Rodapé institucional (Sobre nós + contato) ───────────────────────── */
+.rodape-site {
+  background: linear-gradient(135deg, var(--cor-primaria-escura), var(--cor-primaria-escura-2));
+  color: rgba(255, 255, 255, .92);
+  padding: 40px 20px;
+}
+.rodape-site__conteudo {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+.rodape-site h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: var(--cor-secundaria-clara);
+}
+.rodape-site p {
+  margin: 0 0 22px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, .85);
+}
+.rodape-site__contato {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cor-secundaria);
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 12px 22px;
+  border-radius: var(--raio-botao);
+}
+.rodape-site__contato:hover { background: var(--cor-secundaria-clara); }

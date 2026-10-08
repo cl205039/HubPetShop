@@ -1,0 +1,37 @@
+:root {
+  --cor-primaria: #6A0DAD;
+  --cor-primaria-clara: #9C27B0;
+  --cor-primaria-escura: #4A148C;
+  --cor-primaria-escura-2: #6A1B9A;
+  --cor-secundaria: #FF9800;
+  --cor-secundaria-clara: #FFB74D;
+  --cor-fundo-input: #F5F5F5;
+  --cor-cinza-card: #F5F5F5;
+  --cor-texto-secundario: #9E9E9E;
+  --cor-erro: #EF5350;
+  --cor-sucesso: #4CAF50;
+  --cor-aviso: #FF9800;
+
+  --raio-input: 15px;
+  --raio-card: 20px;
+  --raio-painel: 30px;
+  --raio-login-card: 25px;
+  --raio-botao: 20px;
+  --sombra-card: 0 10px 20px rgba(0, 0, 0, .12);
+
+  --fonte-base: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.fundo-gradiente-principal {
+  background: linear-gradient(to bottom, #6A0DAD, #9C27B0);
+}
+
+.fundo-gradiente-escuro {
+  background: linear-gradient(to bottom, #4A148C, #6A1B9A);
+}
+
+/* Fundo mais clean para as telas de login/cadastro — claro, com um
+   toque bem sutil de roxo e laranja em vez do gradiente forte cheio. */
+.fundo-clean {
+  background: linear-gradient(160deg, #F6EEFB 0%, #FDFBFA 55%, #FFF3E0 100%);
+}

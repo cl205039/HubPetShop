@@ -1,0 +1,12 @@
+DirectoryIndex inicio.html index.html
+
+# Site em desenvolvimento ativo: evita que o navegador guarde em cache
+# versões antigas de JS/CSS (senão mudanças no código só aparecem depois
+# de um "limpar cache" manual, mesmo com Ctrl+Shift+R).
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+</IfModule>

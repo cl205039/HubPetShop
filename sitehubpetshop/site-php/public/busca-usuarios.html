@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Buscar Usuários</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-escuro">
+
+<div class="tela-painel">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="history.back()" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1>Buscar Usuários</h1>
+    <span style="width:28px"></span>
+  </div>
+
+  <div class="painel-branco">
+    <form id="form-busca" novalidate style="display:flex; gap:10px; align-items:flex-end;">
+      <div class="campo" style="flex:0 0 120px; margin-bottom:0;">
+        <label for="atributo">Buscar por</label>
+        <select id="atributo" name="atributo">
+          <option value="nome">Nome</option>
+          <option value="email">E-mail</option>
+          <option value="telefone">Telefone</option>
+          <option value="cpf">CPF</option>
+          <option value="tipo">Tipo</option>
+        </select>
+      </div>
+      <div class="campo" style="flex:1; margin-bottom:0;">
+        <label for="termo">Termo</label>
+        <input type="text" id="termo" name="termo">
+      </div>
+      <button type="submit" class="btn-primario" style="width:auto; padding:14px 20px; display:inline-flex;" data-icone="search"></button>
+    </form>
+
+    <div id="lista-resultados" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/busca-usuarios.js"></script>
+</body>
+</html>

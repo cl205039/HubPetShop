@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPetShop</title>
+
+<style>
+
+*{ box-sizing:border-box; }
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f5f3fa;
+    color:#333;
+}
+
+/* ===== HEADER ===== */
+
+header{
+    background:linear-gradient(to right, #6a0dad, #4b0082);
+    color:white;
+    padding:16px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    position:sticky;
+    top:0;
+    z-index:50;
+}
+
+header .logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+header nav{
+    display:flex;
+    gap:10px;
+}
+
+header nav button{
+    background:transparent;
+    border:2px solid rgba(255,255,255,0.4);
+    color:white;
+    padding:8px 18px;
+    border-radius:20px;
+    cursor:pointer;
+    font-size:14px;
+    transition:0.2s;
+}
+
+header nav button.ativo,
+header nav button:hover{
+    background:#ff8c00;
+    border-color:#ff8c00;
+}
+
+.header-acoes{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+#btnCarrinho{
+    position:relative;
+    background:#ff8c00;
+    border:none;
+    color:white;
+    padding:10px 16px;
+    border-radius:20px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+}
+
+#badgeCarrinho{
+    position:absolute;
+    top:-8px;
+    right:-8px;
+    background:#e63946;
+    color:white;
+    font-size:11px;
+    padding:2px 6px;
+    border-radius:50%;
+}
+
+#areaUsuario{
+    font-size:14px;
+}
+
+#areaUsuario button{
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.6);
+    color:white;
+    padding:6px 12px;
+    border-radius:16px;
+    cursor:pointer;
+    font-size:13px;
+}
+
+/* ===== GRID DE PRODUTOS / SERVIÇOS ===== */
+
+main{
+    max-width:1100px;
+    margin:0 auto;
+    padding:24px;
+}
+
+h2.titulo-secao{
+    color:#4b0082;
+    margin-bottom:16px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+    gap:18px;
+}
+
+.card{
+    background:white;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 3px 10px rgba(0,0,0,0.08);
+    display:flex;
+    flex-direction:column;
+}
+
+.card .imagem{
+    width:100%;
+    height:140px;
+    background:#e9e4f5 center/cover no-repeat;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#8a6fb5;
+    font-size:13px;
+}
+
+.card .conteudo{
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    flex:1;
+}
+
+.card h3{
+    margin:0 0 6px;
+    font-size:16px;
+    color:#333;
+}
+
+.card p.desc{
+    font-size:13px;
+    color:#777;
+    flex:1;
+    margin:0 0 10px;
+}
+
+.card .preco{
+    font-size:18px;
+    font-weight:bold;
+    color:#6a0dad;
+    margin-bottom:10px;
+}
+
+.card .duracao{
+    font-size:12px;
+    color:#999;
+    margin-bottom:10px;
+}
+
+.card button{
+    background:#6a0dad;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    transition:0.2s;
+}
+
+.card button:hover{
+    background:#ff8c00;
+}
+
+.vazio{
+    color:#999;
+    font-style:italic;
+}
+
+/* ===== MODAL (base) ===== */
+
+.overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:16px;
+}
+
+.overlay.aberto{
+    display:flex;
+}
+
+.modal{
+    background:white;
+    border-radius:16px;
+    padding:30px;
+    width:100%;
+    max-width:420px;
+    max-height:90vh;
+    overflow-y:auto;
+    position:relative;
+}
+
+.modal h2{
+    color:#6a0dad;
+    margin-top:0;
+    text-align:center;
+}
+
+.modal .fechar{
+    position:absolute;
+    top:14px;
+    right:18px;
+    cursor:pointer;
+    font-size:20px;
+    color:#999;
+    background:none;
+    border:none;
+}
+
+.modal input, .modal select{
+    width:100%;
+    padding:12px;
+    margin-bottom:14px;
+    border-radius:10px;
+    border:1px solid #ccc;
+    font-size:15px;
+}
+
+.modal button.principal{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:#6a0dad;
+    color:white;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.modal button.principal:hover{
+    background:#ff8c00;
+}
+
+.troca-link{
+    text-align:center;
+    margin-top:16px;
+    font-size:14px;
+    color:#666;
+}
+
+.troca-link a{
+    color:#ff8c00;
+    font-weight:bold;
+    text-decoration:none;
+    cursor:pointer;
+}
+
+.troca-link a:hover{
+    text-decoration:underline;
+}
+
+.mensagem{
+    margin-top:12px;
+    padding:10px;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:bold;
+    display:none;
+    text-align:center;
+}
+
+.mensagem.erro{ background:#f8d7da; color:#842029; }
+.mensagem.sucesso{ background:#d1e7dd; color:#0f5132; }
+
+/* ===== CARRINHO ===== */
+
+.item-carrinho{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px solid #eee;
+}
+
+.item-carrinho .info{ flex:1; }
+.item-carrinho .info strong{ display:block; font-size:14px; }
+.item-carrinho .info span{ font-size:12px; color:#777; }
+
+.item-carrinho .qtd{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.item-carrinho .qtd button{
+    width:26px;
+    height:26px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    background:white;
+    cursor:pointer;
+}
+
+.total-carrinho{
+    text-align:right;
+    font-size:18px;
+    font-weight:bold;
+    color:#6a0dad;
+    margin:16px 0;
+}
+
+.grid-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo">🐾 HubPetShop</div>
+
+    <nav>
+        <button id="btnAbaProdutos" class="ativo" onclick="mudarAba('produtos')">Compras</button>
+        <button id="btnAbaServicos" onclick="mudarAba('servicos')">Serviços</button>
+    </nav>
+
+    <div class="header-acoes">
+        <div id="areaUsuario"></div>
+        <button id="btnCarrinho" onclick="abrirCarrinho()">
+            🛒 Carrinho
+            <span id="badgeCarrinho" style="display:none;">0</span>
+        </button>
+    </div>
+</header>
+
+<main>
+
+    <section id="secaoProdutos">
+        <h2 class="titulo-secao">Produtos</h2>
+        <div class="grid" id="gridProdutos"><p class="vazio">Carregando produtos...</p></div>
+    </section>
+
+    <section id="secaoServicos" style="display:none;">
+        <h2 class="titulo-secao">Serviços</h2>
+        <div class="grid" id="gridServicos"><p class="vazio">Carregando serviços...</p></div>
+    </section>
+
+</main>
+
+<!-- ===================== MODAL LOGIN / CADASTRO ===================== -->
+
+<div class="overlay" id="overlayAuth">
+    <div class="modal">
+        <button class="fechar" onclick="fecharModal('overlayAuth')">×</button>
+
+        <!-- LOGIN -->
+        <div id="formLogin">
+            <h2>Entrar</h2>
+            <input type="email" id="loginEmail" placeholder="E-mail">
+            <input type="password" id="loginSenha" placeholder="Senha">
+            <button class="principal" onclick="fazerLogin()">Entrar</button>
+            <div class="mensagem" id="msgLogin"></div>
+            <p class="troca-link">Não tem conta? <a onclick="mostrarCadastro()">Cadastre-se agora</a></p>
+        </div>
+
+        <!-- CADASTRO -->
+        <div id="formCadastro" style="display:none;">
+            <h2>Criar conta</h2>
+            <input type="text" id="cadNome" placeholder="Nome completo">
+            <input type="email" id="cadEmail" placeholder="E-mail">
+            <input type="password" id="cadSenha" placeholder="Senha (mín. 6 caracteres)">
+            <input type="text" id="cadTelefone" placeholder="Telefone">
+            <button class="principal" onclick="fazerCadastro()">Criar conta</button>
+            <div class="mensagem" id="msgCadastro"></div>
+            <p class="troca-link">Já tem conta? <a onclick="mostrarLogin()">Entrar</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL CARRINHO ===================== -->
+
+<div class="overlay" id="overlayCarrinho">
+    <div class="modal" style="max-width:480px;">
+        <button class="fechar" onclick="fecharModal('overlayCarrinho')">×</button>
+        <h2>Seu carrinho</h2>
+
+        <div id="listaCarrinho"><p class="vazio">Seu carrinho está vazio.</p></div>
+
+        <div class="total-carrinho" id="totalCarrinho" style="display:none;"></div>
+
+        <button class="principal" id="btnIrCheckout" style="display:none;" onclick="abrirCheckout()">
+            Fechar pedido
+        </button>
+    </div>
+</div>
+
+<!-- ===================== MODAL CHECKOUT (ENDEREÇO) ===================== -->
+
+<div class="overlay" id="overlayCheckout">
+    <div class="modal">
+        <button class="fechar" onclick="fecharModal('overlayCheckout')">×</button>
+        <h2>Endereço de entrega</h2>
+
+        <input type="text" id="chkCep" placeholder="CEP">
+        <input type="text" id="chkRua" placeholder="Rua">
+        <div class="grid-2">
+            <input type="text" id="chkNumero" placeholder="Número">
+            <input type="text" id="chkBairro" placeholder="Bairro">
+        </div>
+        <div class="grid-2">
+            <input type="text" id="chkCidade" placeholder="Cidade">
+            <input type="text" id="chkEstado" placeholder="UF" maxlength="2">
+        </div>
+
+        <p style="font-size:13px; color:#777;">💰 Pagamento na entrega/retirada.</p>
+
+        <button class="principal" onclick="confirmarPedido()">Confirmar pedido</button>
+        <div class="mensagem" id="msgCheckout"></div>
+    </div>
+</div>
+
+<!-- ===================== MODAL AGENDAMENTO ===================== -->
+
+<div class="overlay" id="overlayAgendamento">
+    <div class="modal">
+        <button class="fechar" onclick="fecharModal('overlayAgendamento')">×</button>
+        <h2>Agendar serviço</h2>
+
+        <p id="agendaServicoNome" style="text-align:center; font-weight:bold; color:#6a0dad;"></p>
+
+        <input type="date" id="agendaData">
+        <input type="time" id="agendaHora">
+        <input type="text" id="agendaObs" placeholder="Observações (opcional)">
+
+        <button class="principal" onclick="confirmarAgendamento()">Confirmar agendamento</button>
+        <div class="mensagem" id="msgAgendamento"></div>
+    </div>
+</div>
+
+<script>
+
+// =============================================
+// ESTADO GLOBAL
+// =============================================
+
+let usuarioLogado   = null;   // { id, nome, email } ou null
+let acaoPendente    = null;   // função a rodar depois que logar com sucesso
+let servicoSelecionado = null;
+
+// Carrinho fica salvo no navegador até o pedido ser fechado
+function getCarrinho(){
+    return JSON.parse(localStorage.getItem('carrinho') || '[]');
+}
+function salvarCarrinho(carrinho){
+    localStorage.setItem('carrinho', JSON.stringify(carrinho));
+    atualizarBadgeCarrinho();
+}
+
+// =============================================
+// INICIALIZAÇÃO
+// =============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    verificarSessao();
+    carregarProdutos();
+    carregarServicos();
+    atualizarBadgeCarrinho();
+});
+
+function mudarAba(aba){
+    const eProdutos = aba === 'produtos';
+    document.getElementById('secaoProdutos').style.display = eProdutos ? 'block' : 'none';
+    document.getElementById('secaoServicos').style.display  = eProdutos ? 'none'  : 'block';
+    document.getElementById('btnAbaProdutos').classList.toggle('ativo', eProdutos);
+    document.getElementById('btnAbaServicos').classList.toggle('ativo', !eProdutos);
+}
+
+function fecharModal(id){
+    document.getElementById(id).classList.remove('aberto');
+}
+function abrirModal(id){
+    document.getElementById(id).classList.add('aberto');
+}
+
+// =============================================
+// SESSÃO / LOGIN / CADASTRO
+// =============================================
+
+function verificarSessao(){
+    fetch('sessao_usuario.php')
+        .then(r => r.json())
+        .then(json => {
+            usuarioLogado = json.logado ? json.usuario : null;
+            renderizarAreaUsuario();
+        });
+}
+
+function renderizarAreaUsuario(){
+    const area = document.getElementById('areaUsuario');
+    if (usuarioLogado){
+        area.innerHTML = 'Olá, ' + usuarioLogado.nome.split(' ')[0] +
+            ' <button onclick="sair()">Sair</button>';
+    } else {
+        area.innerHTML = '<button onclick="abrirModal(\'overlayAuth\')">Entrar</button>';
+    }
+}
+
+function sair(){
+    fetch('logout_usuario.php').then(() => {
+        usuarioLogado = null;
+        renderizarAreaUsuario();
+    });
+}
+
+function mostrarCadastro(){
+    document.getElementById('formLogin').style.display = 'none';
+    document.getElementById('formCadastro').style.display = 'block';
+}
+function mostrarLogin(){
+    document.getElementById('formCadastro').style.display = 'none';
+    document.getElementById('formLogin').style.display = 'block';
+}
+
+// Chamado sempre que uma ação (add ao carrinho / agendar) precisa de login
+function exigirLogin(callback){
+    if (usuarioLogado){
+        callback();
+        return;
+    }
+    acaoPendente = callback;
+    mostrarLogin();
+    document.getElementById('msgLogin').style.display = 'none';
+    abrirModal('overlayAuth');
+}
+
+function fazerLogin(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value.trim();
+
+    if (!email || !senha){
+        mostrarMensagem('msgLogin', 'Preencha e-mail e senha.', 'erro');
+        return;
+    }
+
+    const dados = new FormData();
+    dados.append('email', email);
+    dados.append('senha', senha);
+
+    fetch('login_usuario.php', { method:'POST', body:dados })
+        .then(r => r.json())
+        .then(json => {
+            if (json.sucesso){
+                usuarioLogado = json.usuario;
+                renderizarAreaUsuario();
+                fecharModal('overlayAuth');
+                if (acaoPendente){ acaoPendente(); acaoPendente = null; }
+            } else {
+                mostrarMensagem('msgLogin', json.mensagem, 'erro');
+            }
+        })
+        .catch(() => mostrarMensagem('msgLogin', 'Erro ao conectar com o servidor.', 'erro'));
+}
+
+function fazerCadastro(){
+    const nome     = document.getElementById('cadNome').value.trim();
+    const email    = document.getElementById('cadEmail').value.trim();
+    const senha    = document.getElementById('cadSenha').value.trim();
+    const telefone = document.getElementById('cadTelefone').value.trim();
+
+    if (!nome || !email || !senha){
+        mostrarMensagem('msgCadastro', 'Preencha nome, e-mail e senha.', 'erro');
+        return;
+    }
+
+    const dados = new FormData();
+    dados.append('nome', nome);
+    dados.append('email', email);
+    dados.append('senha', senha);
+    dados.append('telefone', telefone);
+
+    fetch('cadastro_usuario.php', { method:'POST', body:dados })
+        .then(r => r.json())
+        .then(json => {
+            if (json.sucesso){
+                usuarioLogado = json.usuario;
+                renderizarAreaUsuario();
+                fecharModal('overlayAuth');
+                if (acaoPendente){ acaoPendente(); acaoPendente = null; }
+            } else {
+                mostrarMensagem('msgCadastro', json.mensagem, 'erro');
+            }
+        })
+        .catch(() => mostrarMensagem('msgCadastro', 'Erro ao conectar com o servidor.', 'erro'));
+}
+
+function mostrarMensagem(id, texto, tipo){
+    const el = document.getElementById(id);
+    el.textContent = texto;
+    el.className = 'mensagem ' + tipo;
+    el.style.display = 'block';
+}
+
+// =============================================
+// PRODUTOS
+// =============================================
+
+function carregarProdutos(){
+    fetch('listar_produtos.php')
+        .then(r => r.json())
+        .then(json => {
+            const grid = document.getElementById('gridProdutos');
+            if (!json.sucesso || json.produtos.length === 0){
+                grid.innerHTML = '<p class="vazio">Nenhum produto disponível no momento.</p>';
+                return;
+            }
+            grid.innerHTML = json.produtos.map(p => `
+                <div class="card">
+                    <div class="imagem">${p.foto ? '<img src="'+p.foto+'" style="width:100%;height:100%;object-fit:cover;">' : '🐶 sem foto'}</div>
+                    <div class="conteudo">
+                        <h3>${escapeHtml(p.nome)}</h3>
+                        <p class="desc">${escapeHtml(p.descricao || '')}</p>
+                        <div class="preco">R$ ${parseFloat(p.preco).toFixed(2).replace('.',',')}</div>
+                        <button onclick="exigirLogin(() => adicionarAoCarrinho(${p.id}, '${escapeHtml(p.nome)}', ${p.preco}))">
+                            Adicionar ao carrinho
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+// =============================================
+// SERVIÇOS
+// =============================================
+
+function carregarServicos(){
+    fetch('listar_servicos.php')
+        .then(r => r.json())
+        .then(json => {
+            const grid = document.getElementById('gridServicos');
+            if (!json.sucesso || json.servicos.length === 0){
+                grid.innerHTML = '<p class="vazio">Nenhum serviço disponível no momento.</p>';
+                return;
+            }
+            grid.innerHTML = json.servicos.map(s => `
+                <div class="card">
+                    <div class="imagem">✂️ ${escapeHtml(s.categoria || 'Serviço')}</div>
+                    <div class="conteudo">
+                        <h3>${escapeHtml(s.nome)}</h3>
+                        <p class="desc">${escapeHtml(s.descricao || '')}</p>
+                        <div class="duracao">⏱ ${s.duracao_min} min</div>
+                        <div class="preco">R$ ${parseFloat(s.preco).toFixed(2).replace('.',',')}</div>
+                        <button onclick="exigirLogin(() => abrirAgendamento(${s.id}, '${escapeHtml(s.nome)}'))">
+                            Agendar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+function abrirAgendamento(servicoId, nome){
+    servicoSelecionado = servicoId;
+    document.getElementById('agendaServicoNome').textContent = nome;
+    document.getElementById('msgAgendamento').style.display = 'none';
+    document.getElementById('agendaData').value = '';
+    document.getElementById('agendaHora').value = '';
+    document.getElementById('agendaObs').value  = '';
+    abrirModal('overlayAgendamento');
+}
+
+function confirmarAgendamento(){
+    const data = document.getElementById('agendaData').value;
+    const hora = document.getElementById('agendaHora').value;
+    const obs  = document.getElementById('agendaObs').value.trim();
+
+    if (!data || !hora){
+        mostrarMensagem('msgAgendamento', 'Escolha a data e o horário.', 'erro');
+        return;
+    }
+
+    const dados = new FormData();
+    dados.append('servico_id', servicoSelecionado);
+    dados.append('data', data);
+    dados.append('hora', hora);
+    dados.append('observacoes', obs);
+
+    fetch('agendar.php', { method:'POST', body:dados })
+        .then(r => r.json())
+        .then(json => {
+            if (json.sucesso){
+                mostrarMensagem('msgAgendamento', json.mensagem, 'sucesso');
+                setTimeout(() => fecharModal('overlayAgendamento'), 1200);
+            } else if (json.precisa_login){
+                fecharModal('overlayAgendamento');
+                exigirLogin(() => abrirAgendamento(servicoSelecionado, document.getElementById('agendaServicoNome').textContent));
+            } else {
+                mostrarMensagem('msgAgendamento', json.mensagem, 'erro');
+            }
+        })
+        .catch(() => mostrarMensagem('msgAgendamento', 'Erro ao conectar com o servidor.', 'erro'));
+}
+
+// =============================================
+// CARRINHO
+// =============================================
+
+function adicionarAoCarrinho(id, nome, preco){
+    const carrinho = getCarrinho();
+    const existente = carrinho.find(i => i.produto_id === id);
+
+    if (existente){
+        existente.quantidade++;
+    } else {
+        carrinho.push({ produto_id:id, nome:nome, preco:preco, quantidade:1 });
+    }
+
+    salvarCarrinho(carrinho);
+}
+
+function atualizarBadgeCarrinho(){
+    const carrinho = getCarrinho();
+    const total = carrinho.reduce((soma, i) => soma + i.quantidade, 0);
+    const badge = document.getElementById('badgeCarrinho');
+    badge.textContent = total;
+    badge.style.display = total > 0 ? 'inline-block' : 'none';
+}
+
+function abrirCarrinho(){
+    renderizarCarrinho();
+    abrirModal('overlayCarrinho');
+}
+
+function renderizarCarrinho(){
+    const carrinho = getCarrinho();
+    const lista = document.getElementById('listaCarrinho');
+    const totalEl = document.getElementById('totalCarrinho');
+    const btnCheckout = document.getElementById('btnIrCheckout');
+
+    if (carrinho.length === 0){
+        lista.innerHTML = '<p class="vazio">Seu carrinho está vazio.</p>';
+        totalEl.style.display = 'none';
+        btnCheckout.style.display = 'none';
+        return;
+    }
+
+    lista.innerHTML = carrinho.map((item, idx) => `
+        <div class="item-carrinho">
+            <div class="info">
+                <strong>${escapeHtml(item.nome)}</strong>
+                <span>R$ ${item.preco.toFixed(2).replace('.',',')} cada</span>
+            </div>
+            <div class="qtd">
+                <button onclick="alterarQuantidade(${idx}, -1)">-</button>
+                ${item.quantidade}
+                <button onclick="alterarQuantidade(${idx}, 1)">+</button>
+            </div>
+        </div>
+    `).join('');
+
+    const total = carrinho.reduce((soma, i) => soma + (i.preco * i.quantidade), 0);
+    totalEl.style.display = 'block';
+    totalEl.textContent = 'Total: R$ ' + total.toFixed(2).replace('.',',');
+    btnCheckout.style.display = 'block';
+}
+
+function alterarQuantidade(idx, delta){
+    const carrinho = getCarrinho();
+    carrinho[idx].quantidade += delta;
+    if (carrinho[idx].quantidade <= 0){
+        carrinho.splice(idx, 1);
+    }
+    salvarCarrinho(carrinho);
+    renderizarCarrinho();
+}
+
+// =============================================
+// CHECKOUT
+// =============================================
+
+function abrirCheckout(){
+    exigirLogin(() => {
+        fecharModal('overlayCarrinho');
+        document.getElementById('msgCheckout').style.display = 'none';
+        abrirModal('overlayCheckout');
+    });
+}
+
+function confirmarPedido(){
+    const carrinho = getCarrinho();
+
+    if (carrinho.length === 0){
+        mostrarMensagem('msgCheckout', 'Seu carrinho está vazio.', 'erro');
+        return;
+    }
+
+    const cep    = document.getElementById('chkCep').value.trim();
+    const rua    = document.getElementById('chkRua').value.trim();
+    const numero = document.getElementById('chkNumero').value.trim();
+    const bairro = document.getElementById('chkBairro').value.trim();
+    const cidade = document.getElementById('chkCidade').value.trim();
+    const estado = document.getElementById('chkEstado').value.trim();
+
+    if (!cep || !rua || !numero || !bairro || !cidade || !estado){
+        mostrarMensagem('msgCheckout', 'Preencha todos os campos de endereço.', 'erro');
+        return;
+    }
+
+    const carrinhoParaEnvio = carrinho.map(i => ({ produto_id:i.produto_id, quantidade:i.quantidade }));
+
+    const dados = new FormData();
+    dados.append('carrinho', JSON.stringify(carrinhoParaEnvio));
+    dados.append('cep', cep);
+    dados.append('rua', rua);
+    dados.append('numero', numero);
+    dados.append('bairro', bairro);
+    dados.append('cidade', cidade);
+    dados.append('estado', estado);
+
+    fetch('finalizar_pedido.php', { method:'POST', body:dados })
+        .then(r => r.json())
+        .then(json => {
+            if (json.sucesso){
+                mostrarMensagem('msgCheckout', json.mensagem, 'sucesso');
+                localStorage.removeItem('carrinho');
+                atualizarBadgeCarrinho();
+                setTimeout(() => fecharModal('overlayCheckout'), 1500);
+            } else if (json.precisa_login){
+                fecharModal('overlayCheckout');
+                exigirLogin(() => abrirCheckout());
+            } else {
+                mostrarMensagem('msgCheckout', json.mensagem, 'erro');
+            }
+        })
+        .catch(() => mostrarMensagem('msgCheckout', 'Erro ao conectar com o servidor.', 'erro'));
+}
+
+// =============================================
+// UTIL
+// =============================================
+
+function escapeHtml(texto){
+    const div = document.createElement('div');
+    div.textContent = texto ?? '';
+    return div.innerHTML;
+}
+
+</script>
+
+</body>
+</html>

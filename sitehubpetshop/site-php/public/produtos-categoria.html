@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Produtos</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-principal">
+
+<header class="navbar-loja">
+  <div class="navbar-loja__conteudo">
+    <a href="inicio.html" class="navbar-loja__marca">
+      <img src="assets/images/logo.png" alt="HubPet Shop">
+    </a>
+    <form class="campo-busca" id="form-busca-navbar" role="search">
+      <input type="search" id="input-busca-navbar" name="busca" placeholder="Buscar rações, petiscos, brinquedos..." aria-label="Buscar produtos">
+      <button type="submit" aria-label="Buscar" data-icone="search"></button>
+    </form>
+    <nav class="navbar-loja__acoes">
+      <span id="saudacao" class="navbar-loja__saudacao"></span>
+      <a href="petshops.html?para=servicos" class="navbar-loja__link"><span data-icone="calendar" data-tamanho="20"></span>Serviços</a>
+      <a href="meus-pedidos.html" class="navbar-loja__link"><span data-icone="package" data-tamanho="20"></span>Meus pedidos</a>
+      <span id="acesso-conta"></span>
+      <div class="btn-icone-wrap">
+        <button type="button" class="btn-icone" onclick="window.location.href='carrinho.html'" title="Carrinho" data-icone="cart"></button>
+        <span class="badge-carrinho" id="badge-carrinho" hidden></span>
+      </div>
+    </nav>
+  </div>
+  <div class="navbar-loja__pills">
+    <div class="navbar-loja__pills-conteudo">
+      <a href="petshops.html?para=servicos" class="pill-nav"><span data-icone="activity" data-tamanho="16"></span>Serviços</a>
+      <a href="petshops.html" class="pill-nav"><span data-icone="store" data-tamanho="16"></span>Petshops</a>
+      <a href="produtos-categoria.html" class="pill-nav"><span data-icone="package" data-tamanho="16"></span>Todos os produtos</a>
+      <a href="meus-pedidos.html" class="pill-nav"><span data-icone="bag" data-tamanho="16"></span>Meus pedidos</a>
+      <a href="meus-pets.html" class="pill-nav"><span data-icone="paw" data-tamanho="16"></span>Meus pets</a>
+    </div>
+  </div>
+</header>
+
+<div class="tela-painel com-padding-inferior">
+  <div class="painel-branco painel-branco--largo">
+    <div class="catalogo-cabecalho">
+      <button class="btn-icone" style="background:var(--cor-fundo-input); color:var(--cor-primaria);" onclick="window.location.href='inicio.html'" data-icone="arrow-left" aria-label="Voltar"></button>
+      <h1 id="titulo-categoria" style="flex:1; margin:0; font-size:20px;">Produtos</h1>
+    </div>
+    <div id="lista-ofertas" class="grade-produtos"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<footer class="rodape-site">
+  <div class="rodape-site__conteudo">
+    <h2>Sobre o HubPetShop</h2>
+    <p>O HubPetShop nasceu para transformar a forma como você cuida do seu pet. Reunimos produtos, serviços e os melhores estabelecimentos em uma única plataforma prática e intuitiva. Menos complicação para os tutores, mais visibilidade para as empresas e muito mais amor e modernidade para o mercado pet.</p>
+    <a href="mailto:contato@hubpetshop.com" class="rodape-site__contato">
+      <span data-icone="mail" data-tamanho="18"></span>
+      Fale com a gente
+    </a>
+  </div>
+</footer>
+
+<a href="carrinho.html" class="barra-carrinho" id="barra-carrinho" style="display:none;">
+  <span><span class="qtd" id="qtd-carrinho">0</span>Ver carrinho</span>
+  <strong id="total-carrinho">R$ 0,00</strong>
+</a>
+
+<script type="module" src="assets/js/pages/produtos-categoria.js"></script>
+</body>
+</html>

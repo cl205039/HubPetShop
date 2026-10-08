@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Entrar</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-clean">
+
+<div class="tela-centralizada">
+  <div class="login-card">
+    <div class="marca">
+      <img src="assets/images/logo.png" alt="HubPet Shop" class="logo-marca">
+      <p class="subtitulo-boas-vindas">Bem-vindo(a) de volta</p>
+    </div>
+
+    <form id="form-login" novalidate>
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" autocomplete="username" required>
+      </div>
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" autocomplete="current-password" minlength="6" required>
+      </div>
+      <button type="submit" id="btn-entrar" class="btn-primario">ENTRAR</button>
+    </form>
+
+    <p class="link-secundario"><a href="nova-senha.html">Esqueceu a senha?</a></p>
+    <p class="link-secundario">Não tem conta? <a href="cadastro.html">Cadastre-se</a></p>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Meus Pets</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-escuro">
+
+<div class="tela-painel">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="window.location.href='minha-conta.html'" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1>Meus Pets</h1>
+    <button class="btn-icone" onclick="window.location.href='cadastrar-pet.html'" title="Adicionar pet" data-icone="plus"></button>
+  </div>
+
+  <div class="painel-branco">
+    <div id="lista-pets"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/meus-pets.js"></script>
+</body>
+</html>

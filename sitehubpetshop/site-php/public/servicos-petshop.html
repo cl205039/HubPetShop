@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Serviços do Petshop</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-principal">
+
+<div class="tela-painel com-padding-inferior">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="window.location.href='petshops.html?para=servicos'" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1 id="titulo-petshop">Petshop</h1>
+    <button class="btn-icone" onclick="window.location.href='agendamentos.html'" title="Meus agendamentos" data-icone="calendar"></button>
+    <span id="acesso-conta"></span>
+  </div>
+
+  <div class="painel-branco">
+    <div id="lista-servicos"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/servicos-petshop.js"></script>
+</body>
+</html>

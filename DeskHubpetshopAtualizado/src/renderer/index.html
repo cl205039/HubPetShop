@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Desktop Hub PetShop</title>
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+    <div id="tela-login" class="tela-login">
+        <div class="login-card">
+            <img src="../../../Logos/logopata.png" class="login-logo" alt="Logo HubPet">
+            <h1>HubPet Shop</h1>
+            <p class="login-subtitulo">Painel de administração e petshops</p>
+
+            <form id="form-login">
+                <div class="grupo-formulario">
+                    <label for="loginEmail">E-mail</label>
+                    <input type="email" id="loginEmail" class="input-formulario" autocomplete="username" required>
+                </div>
+                <div class="grupo-formulario">
+                    <label for="loginSenha">Senha</label>
+                    <div class="campo-senha-wrapper">
+                        <input type="password" id="loginSenha" class="input-formulario" autocomplete="current-password" required>
+                        <button type="button" class="btn-toggle-senha" data-alvo="loginSenha" tabindex="-1">👁</button>
+                    </div>
+                </div>
+
+                <div id="loginAviso" class="login-aviso" style="display:none;"></div>
+
+                <button type="submit" id="btnEntrar" class="btn-auth-principal">Entrar</button>
+            </form>
+
+            <p class="login-link-cadastro">
+                Não tem conta? <a href="#" id="linkAbrirCadastro">Cadastre-se</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="tela-cadastro" class="tela-login" style="display:none;">
+        <div class="login-card cadastro-card">
+            <button type="button" id="btnVoltarLogin" class="btn-voltar-cadastro">‹ Voltar ao login</button>
+
+            <img src="../../../Logos/logopata.png" class="login-logo" alt="Logo HubPet">
+            <h1>Cadastro de Petshop</h1>
+            <p class="login-subtitulo">Seu cadastro fica pendente até um administrador aprovar</p>
+
+            <div class="stepper-cadastro" id="stepperCadastro">
+                <div class="step-item ativo" data-step="1">
+                    <div class="step-numero">1</div>
+                    <div class="step-label">Dados da Conta</div>
+                </div>
+                <div class="step-linha"></div>
+                <div class="step-item" data-step="2">
+                    <div class="step-numero">2</div>
+                    <div class="step-label">Estabelecimento</div>
+                </div>
+                <div class="step-linha"></div>
+                <div class="step-item" data-step="3">
+                    <div class="step-numero">3</div>
+                    <div class="step-label">Endereço</div>
+                </div>
+            </div>
+
+            <form id="form-cadastro">
+                <div class="secao-cadastro" data-step="1">
+                    <h3 class="divisor-formulario">👤 Dados da Conta</h3>
+                    <div class="grupo-formulario">
+                        <label for="cadNome">Nome do Estabelecimento</label>
+                        <input type="text" id="cadNome" class="input-formulario" maxlength="100" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadEmail">E-mail</label>
+                        <input type="email" id="cadEmail" class="input-formulario" maxlength="150" autocomplete="username" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadSenha">Senha (mínimo 6 caracteres)</label>
+                        <div class="campo-senha-wrapper">
+                            <input type="password" id="cadSenha" class="input-formulario" minlength="6" autocomplete="new-password" required>
+                            <button type="button" class="btn-toggle-senha" data-alvo="cadSenha" tabindex="-1">👁</button>
+                        </div>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadConfirmarSenha">Confirmar Senha</label>
+                        <div class="campo-senha-wrapper">
+                            <input type="password" id="cadConfirmarSenha" class="input-formulario" minlength="6" autocomplete="new-password" required>
+                            <button type="button" class="btn-toggle-senha" data-alvo="cadConfirmarSenha" tabindex="-1">👁</button>
+                        </div>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadTelefone">Telefone</label>
+                        <input type="text" id="cadTelefone" class="input-formulario" maxlength="15" inputmode="numeric" placeholder="(19) 99999-9999" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadCnpj">CNPJ</label>
+                        <input type="text" id="cadCnpj" class="input-formulario" maxlength="18" inputmode="numeric" placeholder="00.000.000/0000-00" required>
+                    </div>
+                </div>
+
+                <div class="secao-cadastro" data-step="2">
+                    <h3 class="divisor-formulario">🏪 Tipo de Estabelecimento</h3>
+                    <div class="grupo-formulario">
+                        <label for="cadTipo">Tipo (ex.: Pet Shop, Clínica Veterinária, Hotel Pet...)</label>
+                        <input type="text" id="cadTipo" class="input-formulario" maxlength="50" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadDescricao">Descrição do Estabelecimento (opcional)</label>
+                        <textarea id="cadDescricao" class="textarea-formulario"></textarea>
+                    </div>
+                </div>
+
+                <div class="secao-cadastro" data-step="3">
+                    <h3 class="divisor-formulario">📍 Endereço</h3>
+                    <div class="grupo-formulario">
+                        <label for="cadCep">CEP</label>
+                        <input type="text" id="cadCep" class="input-formulario" maxlength="8" inputmode="numeric" placeholder="Somente números" required>
+                        <small class="mensagem-erro-campo" id="cadCepErro" style="display:none;"></small>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadRua">Rua</label>
+                        <input type="text" id="cadRua" class="input-formulario" maxlength="150" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadNumero">Número</label>
+                        <input type="text" id="cadNumero" class="input-formulario" maxlength="10" placeholder="S/N" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadBairro">Bairro</label>
+                        <input type="text" id="cadBairro" class="input-formulario" maxlength="80" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadCidade">Cidade</label>
+                        <input type="text" id="cadCidade" class="input-formulario" maxlength="80" required>
+                    </div>
+                    <div class="grupo-formulario">
+                        <label for="cadEstado">Estado (UF)</label>
+                        <select id="cadEstado" class="input-formulario" required>
+                            <option value="" selected disabled>Selecione o estado</option>
+                            <option value="AC">AC - Acre</option>
+                            <option value="AL">AL - Alagoas</option>
+                            <option value="AP">AP - Amapá</option>
+                            <option value="AM">AM - Amazonas</option>
+                            <option value="BA">BA - Bahia</option>
+                            <option value="CE">CE - Ceará</option>
+                            <option value="DF">DF - Distrito Federal</option>
+                            <option value="ES">ES - Espírito Santo</option>
+                            <option value="GO">GO - Goiás</option>
+                            <option value="MA">MA - Maranhão</option>
+                            <option value="MT">MT - Mato Grosso</option>
+                            <option value="MS">MS - Mato Grosso do Sul</option>
+                            <option value="MG">MG - Minas Gerais</option>
+                            <option value="PA">PA - Pará</option>
+                            <option value="PB">PB - Paraíba</option>
+                            <option value="PR">PR - Paraná</option>
+                            <option value="PE">PE - Pernambuco</option>
+                            <option value="PI">PI - Piauí</option>
+                            <option value="RJ">RJ - Rio de Janeiro</option>
+                            <option value="RN">RN - Rio Grande do Norte</option>
+                            <option value="RS">RS - Rio Grande do Sul</option>
+                            <option value="RO">RO - Rondônia</option>
+                            <option value="RR">RR - Roraima</option>
+                            <option value="SC">SC - Santa Catarina</option>
+                            <option value="SP">SP - São Paulo</option>
+                            <option value="SE">SE - Sergipe</option>
+                            <option value="TO">TO - Tocantins</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="cadastroAviso" class="login-aviso" style="display:none;"></div>
+
+                <button type="submit" id="btnCadastrar" class="btn-auth-principal">Cadastrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app" id="app-principal" style="display:none;">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+            <div class="sidebar-header">
+        <img src="../../../Logos/logopata.png" class="sidebar-logo" alt="Logo HubPet">
+        <h2>HubPet Shop</h2>
+    </div>
+
+            <button
+                class="menu-btn active"
+                data-page="dashboard"
+            >
+                Dashboard
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="petshops"
+            >
+                Parceiros
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="produtos"
+            >
+                Produtos
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="pedidos"
+                >
+                Pedidos
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="servicos"
+            >
+                Serviços
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="agendamentos"
+            >
+                Agendamentos
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="perfil"
+            >
+                Meu Perfil
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="usuarios"
+            >
+                Usuários
+            </button>
+
+            <button
+                class="menu-btn"
+                data-page="relatorios"
+            >
+                Relatórios
+            </button>
+
+            <div class="sidebar-rodape">
+                <hr class="sidebar-divisor">
+                <button id="btnSairSidebar" class="btn-sair-sidebar" title="Sair">
+                    🚪 Sair
+                </button>
+            </div>
+
+        </aside>
+
+        <!-- CONTEÚDO -->
+        <main class="content">
+
+            <!-- TOPO -->
+            <header class="topbar">
+
+                <div class="top-left">
+                    <h2 id="titulo-pagina">
+                        Painel Administrativo
+                    </h2>
+                </div>
+        <div class="top-right">
+
+                    <div class="perfil-admin">
+
+                        <span id="nome-sessao-atual">Admin HubPet</span>
+
+                        <div class="avatar-circle" id="avatar-sessao-atual">
+                            A
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </header>
+
+            <!-- CONTEÚDO DAS PÁGINAS -->
+            <section id="conteudo-principal"></section>
+
+        </main>
+
+    </div>
+
+    <script type="module" src="./renderer.js"></script>
+
+</body>
+</html>

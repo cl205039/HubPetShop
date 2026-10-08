@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Carrinho</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-principal">
+
+<div class="tela-painel">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="window.location.href='inicio.html'" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1>Carrinho</h1>
+    <span style="width:28px"></span>
+  </div>
+
+  <div class="painel-branco">
+    <div id="lista-itens"></div>
+
+    <div id="resumo" style="display:none;">
+      <div class="linha-total total-final">
+        <span>Total</span>
+        <span id="total-carrinho">R$ 0,00</span>
+      </div>
+      <button type="button" id="btn-finalizar" class="btn-primario">FINALIZAR MEU PEDIDO</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/carrinho.js"></script>
+</body>
+</html>

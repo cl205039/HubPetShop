@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Nova senha</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-principal">
+
+<div class="tela-centralizada">
+  <div class="login-card">
+    <div class="marca">
+      <div class="pata" data-icone="paw" data-tamanho="36"></div>
+      <h1>Redefinir senha</h1>
+    </div>
+
+    <form id="form-nova-senha" novalidate>
+      <div class="campo">
+        <label for="email">E-mail cadastrado</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="campo">
+        <label for="novaSenha">Nova senha</label>
+        <input type="password" id="novaSenha" name="novaSenha" minlength="6" required>
+      </div>
+      <div class="campo">
+        <label for="confirmarSenha">Confirmar nova senha</label>
+        <input type="password" id="confirmarSenha" name="confirmarSenha" minlength="6" required>
+      </div>
+      <button type="submit" id="btn-redefinir" class="btn-primario">REDEFINIR SENHA</button>
+    </form>
+
+    <p class="link-secundario"><a href="index.html">Voltar para o login</a></p>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/nova-senha.js"></script>
+</body>
+</html>

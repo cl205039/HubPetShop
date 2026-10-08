@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Finalizar Pedido</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-principal">
+
+<div class="tela-painel">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="window.location.href='carrinho.html'" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1>Finalizar Pedido</h1>
+    <span style="width:28px"></span>
+  </div>
+
+  <div class="painel-branco">
+    <h2 style="margin-top:0;">1. Resumo do pedido</h2>
+    <div id="resumo-itens"></div>
+    <div class="linha-total total-final">
+      <span>Total</span>
+      <span id="total-pedido">R$ 0,00</span>
+    </div>
+
+    <h2>2. Endereço de entrega</h2>
+    <div id="lista-enderecos-checkout"><div class="spinner"></div></div>
+
+    <h2>3. Forma de pagamento</h2>
+    <div id="opcoes-pagamento">
+      <label class="opcao-radio">
+        <input type="radio" name="pagamento" value="Pix (pago na entrega)">
+        <span class="opcao-radio__icone" data-icone="zap" data-tamanho="20"></span>
+        <span class="opcao-radio__texto">
+          <strong>Pix</strong>
+          <small>Pago na entrega</small>
+        </span>
+      </label>
+      <label class="opcao-radio">
+        <input type="radio" name="pagamento" value="Dinheiro (pago na entrega)">
+        <span class="opcao-radio__icone" data-icone="banknote" data-tamanho="20"></span>
+        <span class="opcao-radio__texto">
+          <strong>Dinheiro</strong>
+          <small>Pago na entrega</small>
+        </span>
+      </label>
+      <label class="opcao-radio">
+        <input type="radio" name="pagamento" value="cartao">
+        <span class="opcao-radio__icone" data-icone="credit-card" data-tamanho="20"></span>
+        <span class="opcao-radio__texto">
+          <strong>Cartão</strong>
+          <small>Débito ou crédito</small>
+        </span>
+      </label>
+    </div>
+    <div class="campo" id="campo-tipo-cartao" hidden>
+      <label for="tipoCartao">Tipo de cartão</label>
+      <select id="tipoCartao">
+        <option value="Cartão de Débito">Débito</option>
+        <option value="Cartão de Crédito">Crédito</option>
+      </select>
+    </div>
+
+    <button type="button" id="btn-finalizar" class="btn-primario">FINALIZAR PEDIDO</button>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/pagamentos.js"></script>
+</body>
+</html>

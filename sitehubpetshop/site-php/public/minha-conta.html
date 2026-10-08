@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Minha Conta</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-escuro">
+
+<div class="tela-painel">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="window.location.href='inicio.html'" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1>Minha Conta</h1>
+    <button class="btn-icone" id="btn-sair" title="Sair" data-icone="log-out"></button>
+  </div>
+
+  <div class="painel-branco">
+    <p id="saudacao" style="font-weight:bold; font-size:16px; margin-top:0;"></p>
+
+    <a href="dados.html" class="item-lista">
+      <span class="icone" data-icone="user" data-tamanho="22"></span>
+      <div class="conteudo">
+        <p class="titulo">Meus Dados</p>
+        <p class="subtitulo">Nome, e-mail, telefone e CPF</p>
+      </div>
+      <span class="seta">›</span>
+    </a>
+
+    <a href="meus-pets.html" class="item-lista">
+      <span class="icone" data-icone="paw" data-tamanho="22"></span>
+      <div class="conteudo">
+        <p class="titulo">Meus Pets</p>
+        <p class="subtitulo">Cadastre e gerencie seus pets</p>
+      </div>
+      <span class="seta">›</span>
+    </a>
+
+    <a href="meus-enderecos.html" class="item-lista">
+      <span class="icone" data-icone="map-pin" data-tamanho="22"></span>
+      <div class="conteudo">
+        <p class="titulo">Meus Endereços</p>
+        <p class="subtitulo">Endereços de entrega</p>
+      </div>
+      <span class="seta">›</span>
+    </a>
+
+    <a href="agendamentos.html" class="item-lista">
+      <span class="icone" data-icone="calendar" data-tamanho="22"></span>
+      <div class="conteudo">
+        <p class="titulo">Meus Agendamentos</p>
+        <p class="subtitulo">Banho, tosa, consultas e vacinas</p>
+      </div>
+      <span class="seta">›</span>
+    </a>
+
+    <a href="meus-pedidos.html" class="item-lista">
+      <span class="icone" data-icone="cart" data-tamanho="22"></span>
+      <div class="conteudo">
+        <p class="titulo">Meus Pedidos</p>
+        <p class="subtitulo">Histórico de compras</p>
+      </div>
+      <span class="seta">›</span>
+    </a>
+
+    <a href="busca-usuarios.html" class="item-lista">
+      <span class="icone" data-icone="search" data-tamanho="22"></span>
+      <div class="conteudo">
+        <p class="titulo">Buscar Usuários</p>
+        <p class="subtitulo">Encontre outros usuários do HubPet</p>
+      </div>
+      <span class="seta">›</span>
+    </a>
+
+    <a href="sobre-nos.html" class="item-lista">
+      <span class="icone" data-icone="info" data-tamanho="22"></span>
+      <div class="conteudo">
+        <p class="titulo">Sobre Nós</p>
+        <p class="subtitulo">Conheça o projeto HubPet</p>
+      </div>
+      <span class="seta">›</span>
+    </a>
+
+    <button type="button" id="btn-sair-rodape" class="btn-outline" style="width:100%; box-sizing:border-box; margin-top:16px; color:var(--cor-erro); border-color:var(--cor-erro); font-weight:bold;">SAIR DA CONTA</button>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/minha-conta.js"></script>
+</body>
+</html>

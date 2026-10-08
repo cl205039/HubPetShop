@@ -1,0 +1,126 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fonte-base);
+  color: #333;
+  min-height: 100vh;
+}
+
+.tela-centralizada {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: var(--raio-login-card);
+  box-shadow: var(--sombra-card);
+  padding: 36px 28px 28px;
+  overflow: hidden;
+}
+.login-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+}
+.login-card--largo { max-width: 460px; }
+
+.login-card__voltar {
+  position: absolute;
+  top: 16px; left: 16px;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--cor-fundo-input);
+  color: var(--cor-primaria);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.login-card__voltar:hover { background: #ececec; }
+
+.login-card .marca {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.login-card .marca .subtitulo-boas-vindas {
+  color: var(--cor-texto-secundario);
+  font-size: 14px;
+  margin: 6px 0 0;
+}
+.login-card .marca .logo-marca {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.login-card .marca h1 {
+  font-size: 20px;
+  color: var(--cor-primaria);
+  margin: 8px 0 0;
+}
+.login-card .marca .pata {
+  display: flex;
+  justify-content: center;
+  color: var(--cor-primaria);
+  margin-bottom: 8px;
+}
+
+.tela-painel {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 40px;
+}
+.tela-painel .titulo-topo {
+  text-align: center;
+  color: #fff;
+  margin: 0 0 20px;
+  font-size: 22px;
+}
+
+/* Cabeçalho das telas internas: voltar + título + ação opcional à direita
+   (ex.: logout) — equivalente ao AppBar do Flutter. */
+.topo-interno {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  color: #fff;
+}
+.topo-interno h1 {
+  flex: 1;
+  font-size: 20px;
+  margin: 0;
+  text-align: center;
+}
+.btn-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, .12);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.topo-interno .btn-icone:hover { background: rgba(255, 255, 255, .22); }
+
+.tela-painel.com-padding-inferior { padding-bottom: 84px; }
+
+.icone-svg { display: block; flex-shrink: 0; }

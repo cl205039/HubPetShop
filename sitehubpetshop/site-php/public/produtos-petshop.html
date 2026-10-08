@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Produtos do Petshop</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-principal">
+
+<div class="tela-painel com-padding-inferior">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="window.location.href='petshops.html'" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1 id="titulo-petshop">Petshop</h1>
+    <button class="btn-icone" onclick="window.location.href='carrinho.html'" title="Carrinho" data-icone="cart"></button>
+    <span id="acesso-conta"></span>
+  </div>
+
+  <div class="painel-branco">
+    <div id="lista-ofertas"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<a href="carrinho.html" class="barra-carrinho" id="barra-carrinho" style="display:none;">
+  <span><span class="qtd" id="qtd-carrinho">0</span>Ver carrinho</span>
+  <strong id="total-carrinho">R$ 0,00</strong>
+</a>
+
+<script type="module" src="assets/js/pages/produtos-petshop.js"></script>
+</body>
+</html>

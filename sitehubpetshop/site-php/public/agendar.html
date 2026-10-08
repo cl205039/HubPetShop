@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubPet — Agendar</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="fundo-gradiente-principal">
+
+<div class="tela-painel">
+  <div class="topo-interno">
+    <button class="btn-icone" onclick="window.location.href='petshops.html?para=servicos'" data-icone="arrow-left" aria-label="Voltar"></button>
+    <h1>Agendar Serviço</h1>
+    <button class="btn-icone" onclick="window.location.href='agendamentos.html'" title="Meus agendamentos" data-icone="calendar"></button>
+  </div>
+
+  <div class="painel-branco" id="conteudo-agendar">
+    <form id="form-agendar" novalidate>
+      <div class="campo">
+        <label>Serviço</label>
+        <div id="resumo-servico" class="item-lista" style="cursor:default;"></div>
+      </div>
+
+      <div class="campo">
+        <label for="pet">Pet</label>
+        <select id="pet" name="pet"></select>
+      </div>
+
+      <div class="campo">
+        <label for="dataHora">Data e hora</label>
+        <input type="datetime-local" id="dataHora" name="dataHora" required>
+      </div>
+
+      <button type="submit" id="btn-agendar" class="btn-primario">CONFIRMAR AGENDAMENTO</button>
+    </form>
+  </div>
+</div>
+
+<script type="module" src="assets/js/pages/agendar.js"></script>
+</body>
+</html>
