@@ -9,7 +9,7 @@
 - `sitehubpetshop/` → Versão web, feita com PHP, HTML e CSS
 - `HubPet_completo/` → Versão mobile, feita com Flutter
 
-## Autors
+## Autoras
 
 - Luiza França
 - Laura M. Soares
