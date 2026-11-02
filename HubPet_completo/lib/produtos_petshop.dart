@@ -6,11 +6,7 @@ import 'services/produto_service.dart';
 import 'carrinho.dart';
 import 'rodape_nav.dart';
 import 'recarrega_ao_voltar.dart';
-
-// ============================================================
-// PRODUTOS DO PETSHOP — listagem de produtos de um petshop
-// Aberta ao tocar em um petshop na ListaPetshopsPage.
-// ============================================================
+import 'avaliar_petshop.dart';
 
 class ProdutosPetshopPage extends StatefulWidget {
   final int petshopId;
@@ -46,7 +42,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
 
   static const Color _roxo = Color(0xFF6A0DAD);
 
-  // ── Categorias (chips do topo) ──
   final List<Map<String, String>> _categorias = const [
     {'id': 'todos', 'label': 'Todos'},
     {'id': 'racoes', 'label': 'Rações'},
@@ -55,7 +50,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
     {'id': 'brinquedos', 'label': 'Brinquedos'},
   ];
 
-  // ── Título de cada seção (em ordem de exibição) ──
   final Map<String, String> _secoes = const {
     'racoes': 'Rações e alimentos',
     'petiscos': 'Petiscos e snacks',
@@ -98,7 +92,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
     super.dispose();
   }
 
-  // Produtos de uma categoria já aplicando o filtro de busca.
   List<ProdutoOferta> _produtosDa(String categoria) {
     return _produtos.where((p) {
       final bateCategoria = p.categoria == categoria;
@@ -107,9 +100,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
     }).toList();
   }
 
-  // Produtos cuja categoria não cai em nenhuma das seções conhecidas
-  // (categoria vazia, com outro nome, etc.). Sem isto eles sumiam da
-  // tela — a listagem só mostrava racoes/petiscos/higiene/brinquedos.
   List<ProdutoOferta> _produtosOutros() {
     final conhecidas = _secoes.keys.toSet();
     return _produtos.where((p) {
@@ -139,7 +129,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
 
   @override
   Widget build(BuildContext context) {
-    // Monta as seções visíveis conforme categoria e busca.
     final List<Widget> conteudo = [];
     if (!_carregando && _erro == null) {
       for (final entry in _secoes.entries) {
@@ -160,8 +149,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
         conteudo.addAll(itens.map(_cardProduto));
       }
 
-      // Em "Todos", garante que produtos sem categoria conhecida também
-      // apareçam (antes ficavam de fora e a lista parecia incompleta).
       if (_categoriaSelecionada == 'todos') {
         final outros = _produtosOutros();
         if (outros.isNotEmpty) {
@@ -187,7 +174,7 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
                   context,
                   MaterialPageRoute(builder: (_) => const CarrinhoPage()),
                 );
-                setState(() {}); // atualiza o contador ao voltar
+                setState(() {});
               },
               icon: const Icon(Icons.shopping_cart, color: Colors.white),
               label: Text(
@@ -208,21 +195,24 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
           bottom: false,
           child: Column(
             children: [
-              // ── Cabeçalho ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(10, 10, 15, 10),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(40),
-                          borderRadius: BorderRadius.circular(12),
+                    Semantics(
+                      button: true,
+                      label: 'Voltar',
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(40),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.arrow_back,
+                              color: Colors.white, size: 22),
                         ),
-                        child: const Icon(Icons.arrow_back,
-                            color: Colors.white, size: 22),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -249,6 +239,29 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
                                 style: const TextStyle(
                                     color: Colors.white70, fontSize: 13),
                               ),
+                              const SizedBox(width: 10),
+                              Semantics(
+                                button: true,
+                                label: 'Avaliar petshop',
+                                child: GestureDetector(
+                                  onTap: () => mostrarDialogoAvaliacao(
+                                    context,
+                                    petshopId: widget.petshopId,
+                                    nomePetshop: widget.nome,
+                                  ).then((avaliou) {
+                                    if (avaliou) setState(() {});
+                                  }),
+                                  child: const Text(
+                                    'Avaliar',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -258,7 +271,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
                 ),
               ),
 
-              // ── Busca de produtos ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: TextField(
@@ -270,6 +282,7 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
                     suffixIcon: _busca.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
+                            tooltip: 'Limpar busca',
                             onPressed: () {
                               _buscaCtrl.clear();
                               setState(() => _busca = '');
@@ -289,7 +302,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
 
               const SizedBox(height: 14),
 
-              // ── Chips de categoria ──
               SizedBox(
                 height: 38,
                 child: ListView.separated(
@@ -324,9 +336,10 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
                 ),
               ),
 
+              ListaAvaliacoes(petshopId: widget.petshopId),
+
               const SizedBox(height: 16),
 
-              // ── Lista de produtos ──
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
@@ -386,7 +399,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
     );
   }
 
-  // ── Card de um produto ──
   Widget _cardProduto(ProdutoOferta p) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -401,7 +413,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Foto do produto (com fallback caso a imagem falte)
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.asset(
@@ -409,6 +420,7 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
               width: 78,
               height: 78,
               fit: BoxFit.cover,
+              excludeFromSemantics: true,
               errorBuilder: (_, __, ___) => CustomPaint(
                 painter: _HachuraPainter(),
                 child: const SizedBox(
@@ -426,7 +438,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
             ),
           ),
           const SizedBox(width: 12),
-          // Infos
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,7 +495,6 @@ class _ProdutosPetshopPageState extends State<ProdutosPetshopPage>
   }
 }
 
-// Desenha a hachura diagonal do placeholder "foto do produto".
 class _HachuraPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

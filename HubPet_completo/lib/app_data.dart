@@ -1,30 +1,14 @@
-// ============================================================
-// APP DATA — sessão do usuário logado + carrinho de compras.
-//
-// Antes desta classe guardava TODOS os dados do app (usuários,
-// agendamentos, pedidos...) como listas mockadas em memória. Agora
-// esses dados vêm da API via lib/services/ — aqui fica só o que é
-// estado local da sessão atual, que não faz sentido buscar de novo
-// a cada tela: quem está logado, e o carrinho de compras (que só
-// vira um Pedido de verdade, salvo na API, no fechamento da compra).
-//
-// `Usuario` e `Pedido` continuam exportados daqui para os arquivos
-// que já importavam `app_data.dart` não precisarem trocar o import.
-// ============================================================
 
 export 'models/usuario.dart';
 export 'models/pedido.dart';
 
 import 'models/usuario.dart';
 
-// Item dentro do carrinho de compras. É estado local — não vem da
-// API e não tem `fromJson`/`toJson` — só vira um ItemPedido de
-// verdade quando o pedido é criado via PedidoService.
 class ItemCarrinho {
   final String nome;
   final double preco;
-  final String petshop; // nome do petshop (exibição)
-  int? petshopId; // id do petshop — vai no pedido ao fechar a compra
+  final String petshop;
+  int? petshopId;
   int quantidade;
 
   ItemCarrinho({
@@ -38,16 +22,28 @@ class ItemCarrinho {
   double get subtotal => preco * quantidade;
 }
 
+class Avaliacao {
+  final double nota;
+  final String comentario;
+  final DateTime data;
+
+  Avaliacao({required this.nota, required this.comentario, required this.data});
+}
+
+class Vacina {
+  final String nome;
+  final String data;
+
+  Vacina({required this.nome, required this.data});
+}
+
 class AppData {
-  // ── Usuário logado no momento ──
   static Usuario? usuarioLogado;
 
-  // Não há sessão/token no servidor pra invalidar — só limpa localmente.
   static void logout() {
     usuarioLogado = null;
   }
 
-  // ══════════════════ CARRINHO ══════════════════
   static List<ItemCarrinho> carrinho = [];
 
   static double get totalCarrinho =>
@@ -55,17 +51,12 @@ class AppData {
 
   static int get qtdCarrinho => carrinho.fold(0, (s, i) => s + i.quantidade);
 
-  // Adiciona um produto; se já existir (mesmo nome/petshop), soma a quantidade.
   static void adicionarAoCarrinho(String nome, double preco, String petshop,
       {int? petshopId}) {
-    // `0`/negativo = a API não devolveu um id de verdade — trata como ausente
-    // pra não mandar um id inválido no pedido.
     final id = (petshopId != null && petshopId > 0) ? petshopId : null;
     for (final item in carrinho) {
       if (item.nome == nome && item.petshop == petshop) {
         item.quantidade++;
-        // Preenche o id se o item já existia sem ele (ex.: adicionado
-        // por uma tela antiga que não passava petshopId).
         item.petshopId ??= id;
         return;
       }
@@ -85,4 +76,47 @@ class AppData {
   static void limparCarrinho() {
     carrinho = [];
   }
+
+  static Set<int> petshopsFavoritos = {};
+
+  static bool ehFavorito(int petshopId) =>
+      petshopsFavoritos.contains(petshopId);
+
+  static void alternarFavorito(int petshopId) {
+    if (!petshopsFavoritos.remove(petshopId)) {
+      petshopsFavoritos.add(petshopId);
+    }
+  }
+
+  static Set<int> agendamentosCancelados = {};
+
+  static bool agendamentoCancelado(int id) =>
+      agendamentosCancelados.contains(id);
+
+  static void cancelarAgendamento(int id) => agendamentosCancelados.add(id);
+
+  static Map<int, List<Avaliacao>> avaliacoesPorPetshop = {};
+
+  static void adicionarAvaliacao(
+      int petshopId, double nota, String comentario) {
+    (avaliacoesPorPetshop[petshopId] ??= []).add(
+      Avaliacao(nota: nota, comentario: comentario, data: DateTime.now()),
+    );
+  }
+
+  static List<Avaliacao> avaliacoesDoPetshop(int petshopId) =>
+      avaliacoesPorPetshop[petshopId] ?? const [];
+
+  static Map<int, List<Vacina>> vacinasPorPet = {};
+
+  static void adicionarVacina(int petId, String nome, String data) {
+    (vacinasPorPet[petId] ??= []).add(Vacina(nome: nome, data: data));
+  }
+
+  static void removerVacina(int petId, Vacina vacina) {
+    vacinasPorPet[petId]?.remove(vacina);
+  }
+
+  static List<Vacina> vacinasDoPet(int petId) =>
+      vacinasPorPet[petId] ?? const [];
 }

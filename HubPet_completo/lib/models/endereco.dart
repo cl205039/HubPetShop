@@ -1,7 +1,5 @@
 import 'json_utils.dart';
 
-// Endereço salvo de um usuário. `titulo` é o apelido do endereço
-// ("Casa", "Trabalho"...), opcional.
 class Endereco {
   int? id;
   int? usuarioId;
@@ -37,7 +35,6 @@ class Endereco {
         principal: json['principal'] as bool? ?? false,
       );
 
-  // Usado em POST/PUT de endereço (usuarioId já vai na URL do POST).
   Map<String, dynamic> toJson() => {
         'titulo': titulo,
         'rua': rua,
@@ -48,7 +45,6 @@ class Endereco {
         'principal': principal,
       };
 
-  /// Endereço formatado numa linha só, pra exibição em listas/resumos.
   String get resumo {
     final comp = complemento.trim().isEmpty ? '' : ' - $complemento';
     return '$rua, $numero$comp · $bairro, $cidade';

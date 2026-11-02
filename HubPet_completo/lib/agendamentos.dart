@@ -5,6 +5,9 @@ import 'models/agendamento.dart';
 import 'services/agendamento_service.dart';
 import 'rodape_nav.dart';
 import 'recarrega_ao_voltar.dart';
+import 'agendar.dart';
+import 'comprovante.dart';
+import 'avaliar_petshop.dart';
 
 class AgendamentosPage extends StatefulWidget {
   const AgendamentosPage({super.key});
@@ -74,9 +77,79 @@ class _AgendamentosPageState extends State<AgendamentosPage>
         return Colors.orange;
       case "Concluído":
         return Colors.blue;
+      case "Cancelado":
+        return Colors.red;
       default:
         return Colors.grey;
     }
+  }
+
+  String _statusExibido(Agendamento ag) =>
+      (ag.id != null && AppData.agendamentoCancelado(ag.id!))
+          ? 'Cancelado'
+          : ag.status;
+
+  void _cancelar(Agendamento ag) {
+    if (ag.id == null) return;
+    showDialog(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Cancelar agendamento?'),
+        content: Text('${ag.servico} às ${ag.hora}, em ${ag.local}.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx),
+            child: const Text('Voltar'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() => AppData.cancelarAgendamento(ag.id!));
+              Navigator.pop(dctx);
+            },
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _reagendar(Agendamento ag) async {
+    if (ag.id != null) {
+      setState(() => AppData.cancelarAgendamento(ag.id!));
+    }
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AgendarPage()),
+    );
+  }
+
+  void _verComprovante(Agendamento ag) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ComprovantePage(
+          titulo: 'Comprovante do Agendamento',
+          local: ag.local,
+          data: '${ag.data.day.toString().padLeft(2, '0')}/'
+              '${ag.data.month.toString().padLeft(2, '0')} · ${ag.hora}',
+          linhas: ['${ag.pet} · ${ag.servico}'],
+          total: 0,
+          codigo: ag.id?.toString(),
+        ),
+      ),
+    );
+  }
+
+  void _avaliar(Agendamento ag) {
+    if (ag.petshopId == null) return;
+    mostrarDialogoAvaliacao(
+      context,
+      petshopId: ag.petshopId!,
+      nomePetshop: ag.local,
+    );
   }
 
   @override
@@ -108,6 +181,7 @@ class _AgendamentosPageState extends State<AgendamentosPage>
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    tooltip: 'Voltar',
                   ),
                   const Expanded(
                     child: Center(
@@ -138,6 +212,7 @@ class _AgendamentosPageState extends State<AgendamentosPage>
                           }
                         : null,
                     icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                    tooltip: 'Dia anterior',
                   ),
 
                   AnimatedContainer(
@@ -175,7 +250,6 @@ class _AgendamentosPageState extends State<AgendamentosPage>
                     ),
                   ),
 
-                  // ➡
                   IconButton(
                     onPressed: indiceDia < dias.length - 1
                         ? () {
@@ -187,6 +261,7 @@ class _AgendamentosPageState extends State<AgendamentosPage>
                         : null,
                     icon: const Icon(Icons.arrow_forward_ios,
                         color: Colors.white),
+                    tooltip: 'Próximo dia',
                   ),
                 ],
               ),
@@ -225,48 +300,8 @@ class _AgendamentosPageState extends State<AgendamentosPage>
                                 )
                               : ListView.builder(
                                   itemCount: filtrados.length,
-                                  itemBuilder: (context, index) {
-                                    final ag = filtrados[index];
-
-                                    return Container(
-                                      margin: const EdgeInsets.only(bottom: 15),
-                                      padding: const EdgeInsets.all(15),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.pets,
-                                              color: Colors.deepPurple),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  ag.servico,
-                                                  style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                                Text("${ag.pet} • ${ag.local}"),
-                                                Text("⏰ ${ag.hora}"),
-                                              ],
-                                            ),
-                                          ),
-                                          Text(
-                                            ag.status,
-                                            style: TextStyle(
-                                              color: corStatus(ag.status),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
+                                  itemBuilder: (context, index) =>
+                                      _cardAgendamento(filtrados[index]),
                                 ),
                 ),
               ),
@@ -275,6 +310,90 @@ class _AgendamentosPageState extends State<AgendamentosPage>
         ),
       ),
       bottomNavigationBar: const RodapeNav(),
+    );
+  }
+
+  Widget _cardAgendamento(Agendamento ag) {
+    final statusExibido = _statusExibido(ag);
+    final cancelado = statusExibido == 'Cancelado';
+    final concluido = statusExibido == 'Concluído';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.pets,
+                  color: cancelado ? Colors.grey : Colors.deepPurple),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ag.servico,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        decoration:
+                            cancelado ? TextDecoration.lineThrough : null,
+                        color: cancelado ? Colors.grey : Colors.black,
+                      ),
+                    ),
+                    Text("${ag.pet} • ${ag.local}"),
+                    Text("⏰ ${ag.hora}"),
+                  ],
+                ),
+              ),
+              Text(
+                statusExibido,
+                style: TextStyle(
+                  color: corStatus(statusExibido),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          if (!cancelado) ...[
+            const Divider(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (concluido) ...[
+                  TextButton.icon(
+                    onPressed: () => _verComprovante(ag),
+                    icon: const Icon(Icons.receipt_long, size: 18),
+                    label: const Text('Comprovante'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _avaliar(ag),
+                    icon: const Icon(Icons.star_border, size: 18),
+                    label: const Text('Avaliar'),
+                  ),
+                ] else ...[
+                  TextButton.icon(
+                    onPressed: () => _reagendar(ag),
+                    icon: const Icon(Icons.event_repeat, size: 18),
+                    label: const Text('Reagendar'),
+                  ),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    onPressed: () => _cancelar(ag),
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text('Cancelar'),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

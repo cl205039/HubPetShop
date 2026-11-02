@@ -1,9 +1,7 @@
 const pool = require("./database");
 const admin = require("./admin");
 
-// Mesma lógica de preenchimento de meses usada em admin.js — mantida
-// duplicada aqui de propósito: são só ~15 linhas e os dois módulos têm
-// escopos de dados diferentes (todos os petshops vs. um petshop só).
+// Preenche com 0 os meses sem pedido (mesma lógica de admin.js).
 function preencherUltimosMeses(linhas, quantidade) {
     const mapa = new Map(linhas.map((l) => [l.mes, Number(l.total)]));
     const resultado = [];
@@ -26,7 +24,7 @@ async function receitaPorMes(petshopId, meses = 6) {
     const [linhas] = await pool.query(
         `SELECT DATE_FORMAT(criado_em, '%Y-%m') AS mes, SUM(total) AS total
          FROM pedidos
-         WHERE criado_em IS NOT NULL AND petshop_id = ?
+         WHERE criado_em IS NOT NULL AND petshop_id = ? AND etapa <> 4
          GROUP BY mes`,
         [petshopId]
     );
@@ -56,7 +54,7 @@ async function obterDashboardPetshop(petshopId) {
     );
     const [[receitaMes]] = await pool.query(
         `SELECT COALESCE(SUM(total), 0) AS total FROM pedidos
-         WHERE petshop_id = ? AND YEAR(criado_em) = YEAR(CURDATE()) AND MONTH(criado_em) = MONTH(CURDATE())`,
+         WHERE petshop_id = ? AND YEAR(criado_em) = YEAR(CURDATE()) AND MONTH(criado_em) = MONTH(CURDATE()) AND etapa <> 4`,
         [petshopId]
     );
 
@@ -70,7 +68,30 @@ async function obterDashboardPetshop(petshopId) {
     };
 }
 
+// Categorias que o app aceita (ENUM produtos.categoria).
+const CATEGORIA_APP_POR_NOME = {
+    "Rações": "racoes",
+    "Petiscos": "petiscos",
+    "Higiene e Limpeza": "higiene",
+    "Brinquedos": "brinquedos"
+};
+
+// Converte categoria_id (desktop) no valor de produtos.categoria (app).
+async function categoriaDoApp(conn, categoriaId) {
+    if (!categoriaId) return null;
+    const [[categoria]] = await conn.query("SELECT nome FROM categorias WHERE id = ?", [categoriaId]);
+    return (categoria && CATEGORIA_APP_POR_NOME[categoria.nome]) || null;
+}
+
 async function listarCategorias(tipo) {
+    if (tipo === "produto") {
+        const [linhas] = await pool.query(
+            "SELECT id, nome FROM categorias WHERE tipo = ? AND nome IN (?) ORDER BY nome ASC",
+            [tipo, Object.keys(CATEGORIA_APP_POR_NOME)]
+        );
+        return linhas;
+    }
+
     const [linhas] = await pool.query(
         "SELECT id, nome FROM categorias WHERE tipo = ? ORDER BY nome ASC",
         [tipo]
@@ -106,14 +127,12 @@ async function cadastrarProduto(petshopId, dados) {
     try {
         await conn.beginTransaction();
 
+        const categoriaApp = await categoriaDoApp(conn, dados.categoriaId);
         const [resultado] = await conn.query(
-            "INSERT INTO produtos (nome, descricao, categoria_id, preco, estoque, ativo, petshop_id) VALUES (?, ?, ?, ?, ?, 1, ?)",
-            [dados.nome, dados.descricao || null, dados.categoriaId || null, preco, Number(dados.estoque) || 0, petshopId]
+            "INSERT INTO produtos (nome, descricao, categoria_id, categoria, preco, estoque, ativo, petshop_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
+            [dados.nome, dados.descricao || null, dados.categoriaId || null, categoriaApp, preco, Number(dados.estoque) || 0, petshopId]
         );
 
-        // Toda oferta pertence a um produto de um petshop específico — é essa
-        // linha que o app do consumidor (via API PHP) enxerga no catálogo,
-        // não a tabela `produtos` diretamente.
         await conn.query(
             "INSERT INTO ofertas (produto_id, petshop_id, preco) VALUES (?, ?, ?)",
             [resultado.insertId, petshopId, preco]
@@ -134,13 +153,12 @@ async function editarProduto(id, petshopId, dados) {
     try {
         await conn.beginTransaction();
 
+        const categoriaApp = await categoriaDoApp(conn, dados.categoriaId);
         await conn.query(
-            "UPDATE produtos SET nome = ?, descricao = ?, categoria_id = ?, preco = ? WHERE id = ? AND petshop_id = ?",
-            [dados.nome, dados.descricao || null, dados.categoriaId || null, preco, id, petshopId]
+            "UPDATE produtos SET nome = ?, descricao = ?, categoria_id = ?, categoria = ?, preco = ? WHERE id = ? AND petshop_id = ?",
+            [dados.nome, dados.descricao || null, dados.categoriaId || null, categoriaApp, preco, id, petshopId]
         );
 
-        // Só atualiza o preço da oferta se ela já existir (produto desativado
-        // não tem oferta — ver desativarProduto — e não deve ganhar uma aqui).
         await conn.query(
             "UPDATE ofertas SET preco = ? WHERE produto_id = ? AND petshop_id = ?",
             [preco, id, petshopId]
@@ -162,9 +180,6 @@ async function ativarProduto(id, petshopId) {
 
         await conn.query("UPDATE produtos SET ativo = 1 WHERE id = ? AND petshop_id = ?", [id, petshopId]);
 
-        // Recria a oferta a partir do produto atual (nome/preço já corretos
-        // por causa do UPDATE acima) — NOT EXISTS evita duplicar se por
-        // algum motivo a oferta já estava lá.
         await conn.query(
             `INSERT INTO ofertas (produto_id, petshop_id, preco)
              SELECT p.id, p.petshop_id, p.preco FROM produtos p
@@ -189,7 +204,6 @@ async function desativarProduto(id, petshopId) {
 
         await conn.query("UPDATE produtos SET ativo = 0 WHERE id = ? AND petshop_id = ?", [id, petshopId]);
 
-        // Produto desativado some do catálogo do app do consumidor.
         await conn.query("DELETE FROM ofertas WHERE produto_id = ? AND petshop_id = ?", [id, petshopId]);
 
         await conn.commit();
@@ -208,8 +222,7 @@ async function atualizarEstoqueProduto(id, petshopId, estoque) {
     );
 }
 
-// Categorias fixas oferecidas no cadastro/filtro — duplicado de propósito
-// em servicos.js (renderer), já que main e renderer não compartilham módulo.
+// Categorias fixas de serviço (também em servicos.js do renderer).
 const CATEGORIAS_SERVICO_PRESET = ["Banho e Tosa", "Consulta Veterinária", "Hospedagem", "Passeio", "Adestramento"];
 
 async function listarServicos(petshopId, { busca = "", categoria = "todos" } = {}) {
@@ -277,7 +290,8 @@ async function listarPedidos(petshopId, { status = "todos" } = {}) {
     const [pedidos] = await pool.query(
         `SELECT pe.id, pe.usuario_id, pe.loja, pe.total, pe.data, pe.etapa, pe.criado_em,
                 pe.motivo_cancelamento, pe.cancelado_em,
-                u.nome AS cliente_nome, u.telefone AS cliente_telefone
+                u.nome AS cliente_nome, u.telefone AS cliente_telefone,
+                (SELECT COALESCE(SUM(pi.quantidade), 0) FROM pedido_itens pi WHERE pi.pedido_id = pe.id) AS quantidade_itens
          FROM pedidos pe
          LEFT JOIN usuarios u ON u.id = pe.usuario_id
          WHERE ${condicoes.join(" AND ")}
@@ -303,14 +317,43 @@ async function obterItensPedido(pedidoId, petshopId) {
 }
 
 async function atualizarStatusPedido(id, petshopId, etapa, motivo = null) {
-    if (Number(etapa) === 4) {
-        await pool.query(
-            "UPDATE pedidos SET etapa = ?, motivo_cancelamento = ?, cancelado_em = NOW() WHERE id = ? AND petshop_id = ?",
-            [etapa, motivo, id, petshopId]
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const [[pedido]] = await conn.query(
+            "SELECT etapa FROM pedidos WHERE id = ? AND petshop_id = ? FOR UPDATE",
+            [id, petshopId]
         );
-        return;
+
+        if (pedido && Number(pedido.etapa) === 4 && Number(etapa) !== 4) {
+            throw new Error("Pedido cancelado não pode mudar de status.");
+        }
+
+        if (pedido && Number(pedido.etapa) === 3 && Number(etapa) !== 3) {
+            throw new Error("Pedido entregue não pode mudar de status.");
+        }
+
+        if (Number(etapa) === 4) {
+            await conn.query(
+                "UPDATE pedidos SET etapa = ?, motivo_cancelamento = ?, cancelado_em = NOW() WHERE id = ? AND petshop_id = ?",
+                [etapa, motivo, id, petshopId]
+            );
+
+            if (pedido && Number(pedido.etapa) !== 4) {
+                await admin.devolverEstoquePedido(conn, id);
+            }
+        } else {
+            await conn.query("UPDATE pedidos SET etapa = ? WHERE id = ? AND petshop_id = ?", [etapa, id, petshopId]);
+        }
+
+        await conn.commit();
+    } catch (erro) {
+        await conn.rollback();
+        throw erro;
+    } finally {
+        conn.release();
     }
-    await pool.query("UPDATE pedidos SET etapa = ? WHERE id = ? AND petshop_id = ?", [etapa, id, petshopId]);
 }
 
 async function listarAgendamentos(petshopId, { status = "todos", data = "" } = {}) {
@@ -346,32 +389,217 @@ async function atualizarStatusAgendamento(id, petshopId, status) {
     await pool.query("UPDATE agendamentos SET status = ? WHERE id = ? AND petshop_id = ?", [status, id, petshopId]);
 }
 
-// Exceção pontual: o modal de detalhes do pedido (tela de Pedidos do
-// petshop) precisa do endereço de entrega do cliente, e não existe hoje
-// nenhuma query genérica pra isso. Não filtra por petshop_id porque o
-// dado pertence ao usuário/cliente, não ao petshop — só lê, nunca grava.
+// Endereço de entrega do cliente (detalhes do pedido).
 async function obterEnderecoPrincipalUsuario(usuarioId) {
-    const [enderecos] = await pool.query(
-        `SELECT cep, rua, numero, bairro, cidade, estado
+    const [doApp] = await pool.query(
+        `SELECT titulo, rua, numero, complemento, bairro, cidade, NULL AS estado, NULL AS cep
+         FROM enderecos
+         WHERE usuario_id = ?
+         ORDER BY principal DESC, id ASC
+         LIMIT 1`,
+        [usuarioId]
+    );
+    if (doApp[0]) return doApp[0];
+
+    const [reserva] = await pool.query(
+        `SELECT apelido AS titulo, rua, numero, NULL AS complemento, bairro, cidade, estado, cep
          FROM enderecos_usuarios
          WHERE usuario_id = ?
          ORDER BY principal DESC, id ASC
          LIMIT 1`,
         [usuarioId]
     );
-    return enderecos[0] || null;
+    return reserva[0] || null;
 }
 
-// Reaproveita as queries já existentes em admin.js — não são lógica
-// "exclusiva de admin", são só operações genéricas sobre um petshop. Aqui
-// o `petshopId` sempre vem da própria sessão logada, então não existe
-// risco de um petshop editar o perfil de outro através dessa função.
+// Perfil do petshop: o petshopId vem sempre da sessão (index.js).
 async function obterPerfil(petshopId) {
-    return admin.obterPetshopDetalhes(petshopId);
+    const detalhes = await admin.obterPetshopDetalhes(petshopId);
+    if (!detalhes) return null;
+    return { ...detalhes, horarios: await obterHorariosFuncionamento(petshopId) };
+}
+
+// =========================
+// Horário de funcionamento e agenda
+// =========================
+
+const HORA_VALIDA = /^([01]\d|2[0-3]):[0-5]\d$/;
+const INTERVALO_AGENDA_MIN = 30;
+const DURACAO_PADRAO_MIN = 30;
+
+// Erro com mensagem que pode ser mostrada na tela.
+function erroParaUsuario(mensagem) {
+    const erro = new Error(mensagem);
+    erro.mensagemParaUsuario = mensagem;
+    return erro;
+}
+
+function horaCurta(valor) {
+    return valor ? String(valor).slice(0, 5) : null;
+}
+
+// Horário padrão: segunda a sábado 08:00–18:00, domingo fechado.
+function horarioPadrao(diaSemana) {
+    const fechado = diaSemana === 0;
+    return {
+        dia_semana: diaSemana,
+        hora_abertura: fechado ? null : "08:00",
+        hora_fechamento: fechado ? null : "18:00",
+        fechado
+    };
+}
+
+async function obterHorariosFuncionamento(petshopId) {
+    const [linhas] = await pool.query(
+        "SELECT dia_semana, hora_abertura, hora_fechamento, fechado FROM horarios_funcionamento WHERE petshop_id = ?",
+        [petshopId]
+    );
+
+    return [0, 1, 2, 3, 4, 5, 6].map((dia) => {
+        const linha = linhas.find((l) => l.dia_semana === dia);
+        if (!linha) return horarioPadrao(dia);
+        return {
+            dia_semana: dia,
+            hora_abertura: horaCurta(linha.hora_abertura),
+            hora_fechamento: horaCurta(linha.hora_fechamento),
+            fechado: Boolean(linha.fechado)
+        };
+    });
+}
+
+// Grava os 7 dias do horário de funcionamento.
+async function salvarHorariosFuncionamento(petshopId, horarios) {
+    const dias = [0, 1, 2, 3, 4, 5, 6].map((dia) => (horarios || []).find((h) => Number(h.dia_semana) === dia));
+    if (dias.some((h) => !h)) throw erroParaUsuario("Informe os 7 dias da semana.");
+
+    dias.forEach((h) => {
+        if (h.fechado) return;
+        const nomeDia = admin.DIAS_SEMANA[h.dia_semana];
+        if (!HORA_VALIDA.test(h.hora_abertura || "") || !HORA_VALIDA.test(h.hora_fechamento || "")) {
+            throw erroParaUsuario(`Preencha a abertura e o fechamento de ${nomeDia}.`);
+        }
+        if (h.hora_abertura >= h.hora_fechamento) {
+            throw erroParaUsuario(`${nomeDia}: a abertura precisa ser antes do fechamento.`);
+        }
+    });
+
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const [existentes] = await conn.query(
+            "SELECT id, dia_semana FROM horarios_funcionamento WHERE petshop_id = ? FOR UPDATE",
+            [petshopId]
+        );
+
+        for (const h of dias) {
+            const valores = [
+                HORA_VALIDA.test(h.hora_abertura || "") ? h.hora_abertura : null,
+                HORA_VALIDA.test(h.hora_fechamento || "") ? h.hora_fechamento : null,
+                h.fechado ? 1 : 0
+            ];
+            const existente = existentes.find((e) => e.dia_semana === Number(h.dia_semana));
+
+            if (existente) {
+                await conn.query(
+                    "UPDATE horarios_funcionamento SET hora_abertura = ?, hora_fechamento = ?, fechado = ? WHERE id = ?",
+                    [...valores, existente.id]
+                );
+            } else {
+                await conn.query(
+                    "INSERT INTO horarios_funcionamento (hora_abertura, hora_fechamento, fechado, petshop_id, dia_semana) VALUES (?, ?, ?, ?, ?)",
+                    [...valores, petshopId, Number(h.dia_semana)]
+                );
+            }
+        }
+
+        await conn.commit();
+    } catch (erro) {
+        await conn.rollback();
+        throw erro;
+    } finally {
+        conn.release();
+    }
 }
 
 async function salvarPerfil(petshopId, dados) {
     await admin.salvarPetshop(petshopId, dados);
+}
+
+// Converte a duração em texto ("1h30", "30min") em minutos.
+function duracaoEmMinutos(texto) {
+    const t = String(texto || "").toLowerCase().replace(/\s+/g, "");
+    const comHoras = t.match(/^(\d+)h(\d+)?/);
+    if (comHoras) return Number(comHoras[1]) * 60 + Number(comHoras[2] || 0);
+    const soMinutos = t.match(/^(\d+)/);
+    return soMinutos ? Number(soMinutos[1]) : null;
+}
+
+// Duração total do agendamento (30 min para serviço não encontrado).
+function duracaoDoAgendamento(textoServico, servicos) {
+    const nomes = String(textoServico || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (nomes.length === 0) return DURACAO_PADRAO_MIN;
+
+    return nomes.reduce((total, nome) => {
+        const servico = servicos.find((s) => s.nome.trim().toLowerCase() === nome);
+        return total + (duracaoEmMinutos(servico?.duracao) || DURACAO_PADRAO_MIN);
+    }, 0);
+}
+
+// Início do agendamento em minutos.
+function inicioDoAgendamento(ag) {
+    const texto = ag.hora || String(ag.data || "").split(/[T ]/)[1] || "";
+    const encontrada = texto.match(/^(\d{1,2}):(\d{2})/);
+    return encontrada ? Number(encontrada[1]) * 60 + Number(encontrada[2]) : null;
+}
+
+function seSobrepoem(a, b) {
+    return a.inicio < b.fim && b.inicio < a.fim;
+}
+
+// Marca os agendamentos que se sobrepõem (conflito).
+function marcarConflitos(agendamentos) {
+    const ativos = agendamentos.filter((a) => a.status !== "Cancelado" && a.inicio !== null);
+    for (let i = 0; i < ativos.length; i++) {
+        for (let j = i + 1; j < ativos.length; j++) {
+            if (seSobrepoem(ativos[i], ativos[j])) {
+                ativos[i].conflito = true;
+                ativos[j].conflito = true;
+            }
+        }
+    }
+}
+
+// Dados da Agenda do dia: horário, agendamentos e serviços.
+async function obterAgendaDoDia(petshopId, data) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data))) throw erroParaUsuario("Data inválida.");
+
+    const diaSemana = new Date(`${data}T12:00:00`).getDay();
+    const [horarios, agendamentosDoDia, servicosDoPetshop] = await Promise.all([
+        obterHorariosFuncionamento(petshopId),
+        listarAgendamentos(petshopId, { data }),
+        listarServicos(petshopId)
+    ]);
+
+    const servicos = servicosDoPetshop.map((s) => ({
+        id: s.id,
+        nome: s.nome,
+        duracao: s.duracao,
+        duracaoMinutos: duracaoEmMinutos(s.duracao) || DURACAO_PADRAO_MIN,
+        ativo: Boolean(s.ativo)
+    }));
+
+    const agendamentos = agendamentosDoDia
+        .map((ag) => {
+            const inicio = inicioDoAgendamento(ag);
+            const duracao = duracaoDoAgendamento(ag.servico, servicos);
+            return { ...ag, inicio, duracao, fim: inicio === null ? null : inicio + duracao, conflito: false };
+        })
+        .sort((a, b) => (a.inicio ?? 9999) - (b.inicio ?? 9999));
+
+    marcarConflitos(agendamentos);
+
+    return { data, diaSemana, horario: horarios[diaSemana], intervaloMinutos: INTERVALO_AGENDA_MIN, agendamentos, servicos };
 }
 
 module.exports = {
@@ -394,6 +622,8 @@ module.exports = {
     listarAgendamentos,
     atualizarStatusAgendamento,
     obterPerfil,
+    salvarHorariosFuncionamento,
+    obterAgendaDoDia,
     salvarPerfil,
     obterEnderecoPrincipalUsuario
 };

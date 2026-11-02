@@ -7,23 +7,18 @@ import { montarDashboardAdmin } from "./pages/dashboardAdmin.js";
 import { montarDashboardPetshop } from "./pages/dashboardPetshop.js";
 import { montarPaginaProdutos } from "./pages/produtos.js";
 import { montarPaginaServicos } from "./pages/servicos.js";
-import { montarPaginaPedidosPetshop } from "./pages/pedidosPetshop.js";
+import { montarPaginaPedidosPetshop, pararAtualizacaoPedidosPetshop } from "./pages/pedidosPetshop.js";
 import { montarPaginaAgendamentosPetshop } from "./pages/agendamentosPetshop.js";
 import { montarPaginaPerfil } from "./pages/perfil.js";
 import { montarPaginaRelatorios } from "./pages/relatorios.js";
 import { montarPaginaRelatoriosPetshop } from "./pages/relatoriosPetshop.js";
 import { iniciarTelaCadastro } from "./pages/cadastroPetshop.js";
 import { configurarTogglesSenha } from "./shared/ui.js";
-// Compatibilidade com onclick="..." inline no HTML do dashboard (só o
-// dashboard ainda faz isso — os botões "Ver Petshops"/"Ver Relatórios" em
-// pages/dashboardAdmin.js). Um <script type="module"> não expõe suas
-// declarações em `window` automaticamente, daí a atribuição explícita.
-window.carregarPagina = (nome) => carregarPagina(nome);
 
 // Sessão do usuário logado (preenchida após login bem-sucedido)
 let sessaoAtual = null;
 let timerInatividade = null;
-const TIMEOUT_INATIVIDADE_MS = 30 * 60 * 1000; // 30 minutos
+const TIMEOUT_INATIVIDADE_MS = 60 * 60 * 1000;
 
 function atualizarTitulo(nome) {
     const tituloPagina = document.getElementById("titulo-pagina");
@@ -45,11 +40,12 @@ function atualizarTitulo(nome) {
 async function carregarPagina(nome) {
     const container = document.getElementById("conteudo-principal");
     atualizarTitulo(nome);
+    pararAtualizacaoPedidosPetshop();
 
     switch (nome) {
         case "dashboard":
             if (sessaoAtual && sessaoAtual.tipo === "petshop") {
-                await montarDashboardPetshop(container, sessaoAtual.id, sessaoAtual.nome);
+                await montarDashboardPetshop(container, sessaoAtual.nome);
             } else {
                 await montarDashboardAdmin(container);
             }
@@ -61,31 +57,31 @@ async function carregarPagina(nome) {
             await montarPaginaUsuarios(container);
             break;
         case "produtos":
-            await montarPaginaProdutos(container, sessaoAtual.id);
+            await montarPaginaProdutos(container);
             break;
         case "pedidos":
             if (sessaoAtual && sessaoAtual.tipo === "petshop") {
-                await montarPaginaPedidosPetshop(container, sessaoAtual.id);
+                await montarPaginaPedidosPetshop(container);
             } else {
                 await montarPaginaPedidosAdmin(container);
             }
             break;
         case "servicos":
             if (sessaoAtual && sessaoAtual.tipo === "petshop") {
-                await montarPaginaServicos(container, sessaoAtual.id);
+                await montarPaginaServicos(container);
             } else {
                 await montarPaginaAgendamentosAdmin(container);
             }
             break;
         case "agendamentos":
-            await montarPaginaAgendamentosPetshop(container, sessaoAtual.id);
+            await montarPaginaAgendamentosPetshop(container);
             break;
         case "perfil":
-            await montarPaginaPerfil(container, sessaoAtual.id);
+            await montarPaginaPerfil(container);
             break;
         case "relatorios":
             if (sessaoAtual && sessaoAtual.tipo === "petshop") {
-                await montarPaginaRelatoriosPetshop(container, sessaoAtual.id);
+                await montarPaginaRelatoriosPetshop(container);
             } else {
                 await montarPaginaRelatorios(container);
             }
@@ -93,11 +89,7 @@ async function carregarPagina(nome) {
     }
 }
 
-// Páginas do menu lateral restritas por papel: petshop não vê gestão de
-// outros petshops/usuários; admin não vê o catálogo de produtos do petshop.
-// "relatorios" não entra em nenhuma das duas listas de propósito — os dois
-// papéis acessam a página, e o case "relatorios" acima decide qual versão
-// (própria do petshop vs. agregada do admin) montar.
+// Páginas restritas por papel.
 const PAGINAS_SOMENTE_ADMIN = ["petshops", "usuarios"];
 const PAGINAS_SOMENTE_PETSHOP = ["produtos", "agendamentos", "perfil"];
 
@@ -110,17 +102,21 @@ function configurarMenu(papel) {
         const escondida = (somenteAdmin && papel !== "admin") || (somentePetshop && papel !== "petshop");
         botao.style.display = escondida ? "none" : "";
 
-        // O botão "servicos" aponta pra páginas bem diferentes por papel
-        // (agenda geral da plataforma pro admin, catálogo próprio pro
-        // petshop) — o rótulo muda junto pra não confundir.
         if (pagina === "servicos") {
             botao.innerText = papel === "petshop" ? "Serviços" : "Agenda";
         }
+    });
+}
 
+// Liga os cliques do menu (chamada uma vez, no DOMContentLoaded).
+function configurarCliquesMenu() {
+    const botoes = document.querySelectorAll(".menu-btn");
+    botoes.forEach(botao => {
         botao.addEventListener("click", () => {
+            if (!sessaoAtual) return;
             botoes.forEach(btn => btn.classList.remove("active"));
             botao.classList.add("active");
-            carregarPagina(pagina);
+            carregarPagina(botao.dataset.page);
         });
     });
 }
@@ -141,13 +137,17 @@ function reiniciarTimerInatividade() {
 
 function monitorarAtividade() {
     ["mousemove", "keydown", "click", "scroll"].forEach(evento => {
-        document.addEventListener(evento, reiniciarTimerInatividade);
+        document.addEventListener(evento, () => {
+            if (sessaoAtual) reiniciarTimerInatividade();
+        });
     });
 }
 
 function encerrarSessao(mensagemAviso) {
     pararTimerInatividade();
+    pararAtualizacaoPedidosPetshop();
     sessaoAtual = null;
+    window.api.logout();
     exibirTelaLogin(mensagemAviso);
 }
 
@@ -172,6 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
     iniciarTelaLogin(iniciarSessao);
     iniciarTelaCadastro();
     configurarTogglesSenha();
+    configurarCliquesMenu();
     monitorarAtividade();
 
     const btnSair = document.getElementById("btnSairSidebar");

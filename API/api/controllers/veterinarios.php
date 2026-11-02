@@ -2,6 +2,7 @@
 
 class Veterinarios
 {
+    // Formata a linha do banco para a resposta.
     private static function transformar(array $linha): array
     {
         return [
@@ -13,6 +14,7 @@ class Veterinarios
         ];
     }
 
+    // Lista os serviços do veterinário.
     public static function listarServicos(int $veterinarioId): void
     {
         $stmt = Database::get()->prepare('SELECT * FROM servicos_vet WHERE veterinario_id = ? ORDER BY id');
@@ -20,6 +22,7 @@ class Veterinarios
         Response::json(array_map([self::class, 'transformar'], $stmt->fetchAll()), 200);
     }
 
+    // Cadastra um serviço para o veterinário.
     public static function criarServico(int $veterinarioId, array $corpo): void
     {
         if (!Usuarios::existe($veterinarioId)) {
@@ -39,6 +42,7 @@ class Veterinarios
         Response::json(self::transformar($stmt->fetch()), 201);
     }
 
+    // Remove um serviço do veterinário.
     public static function removerServico(int $id): void
     {
         $pdo = Database::get();

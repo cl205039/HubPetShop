@@ -1,19 +1,5 @@
--- Schema do banco `hubpetshop` para o contrato descrito em docapi.md.
---
--- O banco já existe com tabelas extras de um escopo anterior (parceiros,
--- categorias, admins, avaliacoes, pagamentos, itens_pedido, notificacoes,
--- horarios_funcionamento, enderecos_parceiros, enderecos_usuarios) que não
--- fazem parte do contrato atual e não são tocadas por este script.
---
--- `petshops`, `servicos_vet`, `pedido_itens` e `enderecos` já tinham
--- exatamente o schema que o contrato exige e guardam dados criados pela API
--- (cadastros de usuário), então usam CREATE TABLE IF NOT EXISTS (idempotente,
--- preserva dados existentes).
--- `usuarios`, `pets`, `produtos`, `servicos`, `agendamentos`, `pedidos` e
--- `ofertas` são sempre recriadas do zero: as 6 primeiras porque tinham schema
--- incompatível com o contrato, e `ofertas` porque só guarda catálogo fixo
--- (sem dado gerado pelo app) e precisa ficar em sincronia com `produtos`,
--- que é sempre recriada.
+-- Schema do banco `hubpetshop` (contrato em docapi.md).
+-- Tabelas com IF NOT EXISTS preservam dados; as demais são recriadas.
 
 USE hubpetshop;
 

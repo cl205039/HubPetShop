@@ -2,13 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'inicio.dart';
 
-// ============================================================
-// SPLASH — primeira tela ao abrir o app. Fica 4 segundos e vai
-// direto para a Home do dono de pet (InicioPage). O login não é
-// mais pedido aqui: ele só aparece no fechamento da compra
-// (ver carrinho.dart -> _finalizar).
-// ============================================================
-
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -56,6 +49,7 @@ class _SplashPageState extends State<SplashPage> {
                 'assets/images/imagem.jpg.png',
                 height: 160,
                 width: 160,
+                excludeFromSemantics: true,
               ),
               const SizedBox(height: 20),
               const Text(

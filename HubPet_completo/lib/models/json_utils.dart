@@ -1,6 +1,3 @@
-// Helpers de conversão usados pelos `fromJson` dos modelos.
-// A API pode devolver números como int/double ou como string —
-// essas funções aceitam qualquer um dos formatos sem quebrar o app.
 
 int? paraInt(dynamic valor) {
   if (valor == null) return null;

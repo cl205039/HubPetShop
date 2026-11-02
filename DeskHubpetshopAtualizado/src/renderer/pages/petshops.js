@@ -1,5 +1,5 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
-import { criarBadgeStatus } from "../shared/ui.js";
+import { criarBadgeStatus, escaparHtml, formatarCnpj, formatarTelefone } from "../shared/ui.js";
 import { confirmarAcao } from "../shared/confirmacao.js";
 import { paginar, renderizarControlesPaginacao, ligarControlesPaginacao } from "../shared/paginacao.js";
 
@@ -16,21 +16,6 @@ function statusDoPetshop(p) {
     return "Pendente";
 }
 
-function formatarCnpj(valor) {
-    const digitos = (valor || "").replace(/\D/g, "");
-    if (!digitos) return "—";
-    if (digitos.length !== 14) return valor;
-    return `${digitos.slice(0, 2)}.${digitos.slice(2, 5)}.${digitos.slice(5, 8)}/${digitos.slice(8, 12)}-${digitos.slice(12)}`;
-}
-
-function formatarTelefone(valor) {
-    const digitos = (valor || "").replace(/\D/g, "");
-    if (!digitos) return "—";
-    if (digitos.length === 11) return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
-    if (digitos.length === 10) return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
-    return valor;
-}
-
 export async function montarPaginaPetshops(container) {
     container.innerHTML = `
         <div id="painel-lateral-petshop" class="painel-lateral">
@@ -40,7 +25,7 @@ export async function montarPaginaPetshops(container) {
 
         <div class="painel">
             <div class="topo-tabela-container">
-                <input type="text" id="buscaPetshop" class="input-busca-moderno" placeholder="Buscar por nome ou CNPJ..." value="${filtroBusca}">
+                <input type="text" id="buscaPetshop" class="input-busca-moderno" placeholder="Buscar por nome ou CNPJ..." value="${escaparHtml(filtroBusca)}">
                 <select id="filtroStatusPetshop" class="select-filtro">
                     <option value="todos" ${filtroStatus === "todos" ? "selected" : ""}>Todos os Status</option>
                     <option value="pendente" ${filtroStatus === "pendente" ? "selected" : ""}>Pendentes</option>
@@ -125,10 +110,10 @@ function renderizarTabela() {
 
         return `
             <tr>
-                <td class="celula-truncar" title="${p.nome || "Sem Nome"}"><strong>${p.nome || "Sem Nome"}</strong></td>
-                <td>${formatarCnpj(p.cnpj)}</td>
-                <td>${formatarTelefone(p.telefone)}</td>
-                <td class="celula-truncar" title="${p.tipo || "Pet Shop"}">${p.tipo || "Pet Shop"}</td>
+                <td class="celula-truncar" title="${escaparHtml(p.nome || "Sem Nome")}"><strong>${escaparHtml(p.nome || "Sem Nome")}</strong></td>
+                <td>${escaparHtml(formatarCnpj(p.cnpj))}</td>
+                <td>${escaparHtml(formatarTelefone(p.telefone))}</td>
+                <td class="celula-truncar" title="${escaparHtml(p.tipo || "Pet Shop")}">${escaparHtml(p.tipo || "Pet Shop")}</td>
                 <td>${criarBadgeStatus(status)}</td>
                 <td>
                     ${botoesAcaoStatus(status, p.id)}
@@ -229,30 +214,30 @@ async function abrirDetalhes(id) {
 
         const horariosHtml = p.horarios.length === 0
             ? "<p>Sem horários de funcionamento cadastrados.</p>"
-            : p.horarios.map((h) => `<p><strong>${h.dia_nome}:</strong> ${h.fechado ? "Fechado" : `${h.hora_abertura || "?"} às ${h.hora_fechamento || "?"}`}</p>`).join("");
+            : p.horarios.map((h) => `<p><strong>${escaparHtml(h.dia_nome)}:</strong> ${h.fechado ? "Fechado" : `${escaparHtml(h.hora_abertura || "?")} às ${escaparHtml(h.hora_fechamento || "?")}`}</p>`).join("");
 
         const avaliacoesHtml = p.avaliacoes.length === 0
             ? "<p>Nenhuma avaliação ainda.</p>"
-            : p.avaliacoes.map((a) => `<p>⭐ ${a.nota} — <strong>${a.usuario_nome || "Cliente"}</strong>: ${a.comentario || "(sem comentário)"}</p>`).join("");
+            : p.avaliacoes.map((a) => `<p>⭐ ${escaparHtml(a.nota)} — <strong>${escaparHtml(a.usuario_nome || "Cliente")}</strong>: ${escaparHtml(a.comentario || "(sem comentário)")}</p>`).join("");
 
         conteudo.innerHTML = `
-            <div class="header-lateral-detalhes"><h2>${p.nome}</h2></div>
+            <div class="header-lateral-detalhes"><h2>${escaparHtml(p.nome)}</h2></div>
 
             <div class="secao-detalhes-lateral">
                 <h3 class="titulo-secao-detalhes">📋 Dados Gerais</h3>
                 <p><strong>Status:</strong> ${statusDoPetshop(p)}</p>
-                <p><strong>E-mail:</strong> ${p.email}</p>
-                <p><strong>CNPJ:</strong> ${formatarCnpj(p.cnpj)}</p>
-                <p><strong>Telefone:</strong> ${formatarTelefone(p.telefone)}</p>
-                <p><strong>Tipo:</strong> ${p.tipo || "Não informado"}</p>
-                <p><strong>Descrição:</strong> ${p.descricao || "Sem descrição."}</p>
+                <p><strong>E-mail:</strong> ${escaparHtml(p.email)}</p>
+                <p><strong>CNPJ:</strong> ${escaparHtml(formatarCnpj(p.cnpj))}</p>
+                <p><strong>Telefone:</strong> ${escaparHtml(formatarTelefone(p.telefone))}</p>
+                <p><strong>Tipo:</strong> ${escaparHtml(p.tipo || "Não informado")}</p>
+                <p><strong>Descrição:</strong> ${escaparHtml(p.descricao || "Sem descrição.")}</p>
                 <p><strong>Cadastrado em:</strong> ${p.criado_em ? new Date(p.criado_em).toLocaleDateString("pt-BR") : "Não informado"}</p>
             </div>
 
             <div class="secao-detalhes-lateral">
                 <h3 class="titulo-secao-detalhes">📍 Endereço</h3>
-                <p>${p.rua || "Sem rua"}, ${p.numero || "S/N"} — ${p.bairro || ""}</p>
-                <p>${p.cidade || ""} / ${p.estado || ""} — CEP ${p.cep || "Não informado"}</p>
+                <p>${escaparHtml(p.rua || "Sem rua")}, ${escaparHtml(p.numero || "S/N")} — ${escaparHtml(p.bairro || "")}</p>
+                <p>${escaparHtml(p.cidade || "")} / ${escaparHtml(p.estado || "")} — CEP ${escaparHtml(p.cep || "Não informado")}</p>
             </div>
 
             <div class="secao-detalhes-lateral">
@@ -279,61 +264,61 @@ function abrirEdicao(id) {
     const conteudo = document.getElementById("conteudo-lateral-petshop");
 
     conteudo.innerHTML = `
-        <h2>${p.nome || "Editar Parceiro"}</h2>
+        <h2>${escaparHtml(p.nome || "Editar Parceiro")}</h2>
         <p><strong>ID da Conta:</strong> #${p.id}</p>
 
         <h3 class="divisor-formulario">🔒 Dados de Acesso (Somente Leitura)</h3>
         <div class="grupo-formulario">
             <label>CNPJ:</label>
-            <input type="text" id="editCnpj" value="${formatarCnpj(p.cnpj)}" class="input-formulario input-bloqueado" readonly>
+            <input type="text" id="editCnpj" value="${escaparHtml(formatarCnpj(p.cnpj))}" class="input-formulario input-bloqueado" readonly>
         </div>
         <div class="grupo-formulario">
             <label>E-mail:</label>
-            <input type="text" id="editEmail" value="${p.email || ""}" class="input-formulario input-bloqueado" readonly>
+            <input type="text" id="editEmail" value="${escaparHtml(p.email || "")}" class="input-formulario input-bloqueado" readonly>
         </div>
 
         <h3 class="divisor-formulario">📝 Dados Gerais</h3>
         <div class="grupo-formulario">
             <label>Nome do Estabelecimento:</label>
-            <input type="text" id="editNome" value="${p.nome || ""}" class="input-formulario">
+            <input type="text" id="editNome" value="${escaparHtml(p.nome || "")}" class="input-formulario">
         </div>
         <div class="grupo-formulario">
             <label>Telefone Comercial:</label>
-            <input type="text" id="editTelefone" value="${p.telefone || ""}" class="input-formulario">
+            <input type="text" id="editTelefone" value="${escaparHtml(p.telefone || "")}" class="input-formulario">
         </div>
         <div class="grupo-formulario">
             <label>Tipo de Estabelecimento:</label>
-            <input type="text" id="editTipo" value="${p.tipo || ""}" class="input-formulario" placeholder="Ex.: Pet Shop, Clínica Veterinária, Creche Pet...">
+            <input type="text" id="editTipo" value="${escaparHtml(p.tipo || "")}" class="input-formulario" placeholder="Ex.: Pet Shop, Clínica Veterinária, Creche Pet...">
         </div>
         <div class="grupo-formulario">
             <label>Descrição:</label>
-            <textarea id="editDescricao" class="textarea-formulario">${p.descricao || ""}</textarea>
+            <textarea id="editDescricao" class="textarea-formulario">${escaparHtml(p.descricao || "")}</textarea>
         </div>
 
         <h3 class="divisor-formulario">📍 Endereço</h3>
         <div class="grupo-formulario">
             <label>CEP:</label>
-            <input type="text" id="editCep" value="${p.cep || ""}" class="input-formulario">
+            <input type="text" id="editCep" value="${escaparHtml(p.cep || "")}" class="input-formulario">
         </div>
         <div class="grupo-formulario">
             <label>Rua:</label>
-            <input type="text" id="editRua" value="${p.rua || ""}" class="input-formulario">
+            <input type="text" id="editRua" value="${escaparHtml(p.rua || "")}" class="input-formulario">
         </div>
         <div class="grupo-formulario">
             <label>Número:</label>
-            <input type="text" id="editNumero" value="${p.numero || ""}" class="input-formulario">
+            <input type="text" id="editNumero" value="${escaparHtml(p.numero || "")}" class="input-formulario">
         </div>
         <div class="grupo-formulario">
             <label>Bairro:</label>
-            <input type="text" id="editBairro" value="${p.bairro || ""}" class="input-formulario">
+            <input type="text" id="editBairro" value="${escaparHtml(p.bairro || "")}" class="input-formulario">
         </div>
         <div class="grupo-formulario">
             <label>Cidade:</label>
-            <input type="text" id="editCidade" value="${p.cidade || ""}" class="input-formulario">
+            <input type="text" id="editCidade" value="${escaparHtml(p.cidade || "")}" class="input-formulario">
         </div>
         <div class="grupo-formulario">
             <label>Estado (UF):</label>
-            <input type="text" id="editEstado" value="${p.estado || ""}" class="input-formulario" maxlength="2">
+            <input type="text" id="editEstado" value="${escaparHtml(p.estado || "")}" class="input-formulario" maxlength="2">
         </div>
 
         <button id="btnSalvarPetshop" class="btn-editar btn-salvar-lateral">Salvar Alterações</button>

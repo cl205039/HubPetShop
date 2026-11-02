@@ -64,7 +64,7 @@ try {
                 "message" => "Parceiro atualizado com sucesso"
             ]);
         } else {
-            // Pode ser que o parceiro não exista ou os dados sejam os mesmos
+            // Nada mudou: verifica se o parceiro existe
             $stmtCheck = $pdo->prepare("SELECT id FROM petshops WHERE id = ?");
             $stmtCheck->execute([$id]);
             if ($stmtCheck->fetch()) {

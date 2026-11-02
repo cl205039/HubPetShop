@@ -17,23 +17,19 @@ class AgendarPage extends StatefulWidget {
 class _AgendarPageState extends State<AgendarPage> {
   static const Color _roxo = Color(0xFF6A0DAD);
 
-  int _passo = 0; // 0: petshop · 1: serviços · 2: data · 3: horário
+  int _passo = 0;
 
   List<Petshop> _petshops = [];
   List<Servico> _servicos = [];
   bool _carregando = true;
   String? _erro;
 
-  // ── Passo 1: petshop ──
   int? _petshopSel;
 
-  // ── Passo 2: serviços ──
   final Set<int> _servicosSel = {};
 
-  // ── Passo 3: data ──
   DateTime? _data;
 
-  // ── Passo 4: horário ──
   final List<String> _horarios = const [
     '09:00',
     '10:00',
@@ -49,7 +45,7 @@ class _AgendarPageState extends State<AgendarPage> {
     super.initState();
     _carregarDados();
   }
-
+//1
   Future<void> _carregarDados() async {
     setState(() {
       _carregando = true;
@@ -189,7 +185,6 @@ class _AgendarPageState extends State<AgendarPage> {
         child: SafeArea(
           child: Column(
             children: [
-              // Cabeçalho
               Row(
                 children: [
                   IconButton(
@@ -197,6 +192,7 @@ class _AgendarPageState extends State<AgendarPage> {
                         ? Navigator.pop(context)
                         : setState(() => _passo--),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    tooltip: 'Voltar',
                   ),
                   const Expanded(
                     child: Center(
@@ -281,7 +277,6 @@ class _AgendarPageState extends State<AgendarPage> {
     );
   }
 
-  // ── Indicador de progresso ──
   Widget _indicadorPassos() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -324,7 +319,6 @@ class _AgendarPageState extends State<AgendarPage> {
     );
   }
 
-  // ── Conteúdo de cada passo ──
   Widget _conteudoPasso() {
     switch (_passo) {
       case 0:
@@ -499,7 +493,6 @@ class _AgendarPageState extends State<AgendarPage> {
           }).toList(),
         ),
         const SizedBox(height: 24),
-        // Resumo do agendamento
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -560,7 +553,6 @@ class _AgendarPageState extends State<AgendarPage> {
     );
   }
 
-  // ── Botões inferiores ──
   Widget _botoes() {
     return Padding(
       padding: const EdgeInsets.only(top: 12),

@@ -3,6 +3,7 @@ import 'app_data.dart';
 import 'api_client.dart';
 import 'models/pet.dart';
 import 'services/pet_service.dart';
+import 'services/raca_service.dart';
 
 const primaryColor = Color(0xFF6A1B9A);
 const accentColor = Color(0xFFFF9800);
@@ -25,7 +26,24 @@ class _CadastroPetPageState extends State<CadastroPetPage> {
   final nascimentoController = TextEditingController();
   final sexoController = TextEditingController();
 
+  final _racaFocus = FocusNode();
+  List<String> _racas = [];
+
   bool _enviando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    RacaService.listar().then((racas) {
+      if (mounted) setState(() => _racas = racas);
+    });
+  }
+
+  @override
+  void dispose() {
+    _racaFocus.dispose();
+    super.dispose();
+  }
 
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
@@ -76,7 +94,7 @@ class _CadastroPetPageState extends State<CadastroPetPage> {
             children: [
               buildField("Nome", nomeController),
               buildField("Tipo (Cachorro/Gato)", tipoController),
-              buildField("Raça", racaController),
+              buildRacaField(),
               buildField("Idade", idadeController),
               buildField("Peso (kg)", pesoController),
               buildField("Nascimento (dd/mm/aaaa)", nascimentoController),
@@ -112,6 +130,61 @@ class _CadastroPetPageState extends State<CadastroPetPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget buildRacaField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: RawAutocomplete<String>(
+        textEditingController: racaController,
+        focusNode: _racaFocus,
+        optionsBuilder: (valor) {
+          final busca = valor.text.trim().toLowerCase();
+          if (busca.isEmpty) return const Iterable<String>.empty();
+          return _racas.where((r) => r.toLowerCase().contains(busca));
+        },
+        fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+          return TextFormField(
+            controller: controller,
+            focusNode: focusNode,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              labelText: "Raça",
+              helperText: _racas.isEmpty ? null : "Digite para ver sugestões",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+            validator: (value) =>
+                value == null || value.isEmpty ? "Campo obrigatório" : null,
+          );
+        },
+        optionsViewBuilder: (context, onSelected, opcoes) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(12),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 220),
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  children: opcoes
+                      .map((r) => ListTile(
+                            dense: true,
+                            title: Text(r),
+                            onTap: () => onSelected(r),
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,16 +1,4 @@
-// Migração de dados/schema: move a entidade de negócio de `parceiros` para
-// `petshops` (tabela já usada pela API PHP externa para o app Flutter do
-// consumidor). Não é um simples rename — os IDs de `petshops` já existentes
-// (catálogo fixo, 2 linhas) não têm relação com os IDs de `parceiros`, então
-// cada linha migrada ganha um ID novo e todas as tabelas dependentes são
-// remapeadas para esse ID novo, nunca para o ID antigo do parceiro.
-//
-// DDL (ALTER/RENAME/DROP TABLE) no MySQL faz commit implícito — não é
-// reversível dentro de transação. Por isso o script separa DML transacional
-// (fase 2) de DDL sequencial e idempotente (fases 1 e 3): cada passo confere
-// o estado atual do schema antes de agir, então rodar o script de novo após
-// uma falha parcial não duplica dados nem quebra em "coluna já existe".
-//
+// Migração 003: move os dados de `parceiros` para `petshops`, remapeando os IDs.
 // Uso: node migrations/003_migrar_parceiro_para_petshop.js
 
 const pool = require("../src/main/db/database");

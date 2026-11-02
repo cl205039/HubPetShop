@@ -1,13 +1,30 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
-import { criarBadgeStatus, ETAPA_LABELS } from "../shared/ui.js";
-import { confirmarAcao } from "../shared/confirmacao.js";
+import { criarBadgeStatus, ETAPA_LABELS, enderecoHtml, escaparHtml, formatarMoeda } from "../shared/ui.js";
+import { confirmarAcao, solicitarMotivoCancelamento } from "../shared/confirmacao.js";
+
+const LIMITE_HISTORICO = 10;
+const INTERVALO_ATUALIZACAO_MS = 30 * 1000;
+const DESTAQUE_PEDIDO_NOVO_MS = 8 * 1000;
 
 let listaCompleta = [];
 let filtroBusca = "";
-let petshopIdAtual = null;
+let limiteEntregues = LIMITE_HISTORICO;
+let limiteCancelados = LIMITE_HISTORICO;
+let timerAtualizacao = null;
+let idsEmAnalise = null;
+const idsDestacados = new Set();
 
-export async function montarPaginaPedidosPetshop(container, petshopId) {
-    petshopIdAtual = petshopId;
+// Para a atualização automática.
+export function pararAtualizacaoPedidosPetshop() {
+    if (timerAtualizacao) {
+        clearInterval(timerAtualizacao);
+        timerAtualizacao = null;
+    }
+}
+
+export async function montarPaginaPedidosPetshop(container) {
+    pararAtualizacaoPedidosPetshop();
+    idsEmAnalise = null;
 
     container.innerHTML = `
         <div id="painel-lateral-pedido" class="painel-lateral">
@@ -41,18 +58,25 @@ export async function montarPaginaPedidosPetshop(container, petshopId) {
 
             <div class="kanban-coluna">
                 <div class="kanban-cabecalho kanban-cabecalho-verde">
-                    <h3>🏠 Pronto para Entrega</h3>
+                    <h3>🚚 Saiu para Entrega</h3>
                     <div class="kanban-contador" id="contadorEntrega">0 pedidos</div>
                 </div>
-                <div class="kanban-corpo" id="colunaSaiuEntregue"><p class="kanban-vazio">Carregando...</p></div>
+                <div class="kanban-corpo" id="colunaSaiuParaEntrega"><p class="kanban-vazio">Carregando...</p></div>
             </div>
+        </div>
+
+        <div class="painel" style="margin-top:20px;">
+            <button id="btnToggleEntregues" class="btn-toggle-colapsavel">
+                ✅ Entregues (<span id="contadorEntregues">0</span>) <span id="setaEntregues">▾</span>
+            </button>
+            <div id="listaEntregues" class="lista-historico" style="display:none;"></div>
         </div>
 
         <div class="painel" style="margin-top:20px;">
             <button id="btnToggleCancelados" class="btn-toggle-colapsavel">
                 🗑️ Cancelados (<span id="contadorCancelados">0</span>) <span id="setaCancelados">▾</span>
             </button>
-            <div id="listaCancelados" class="lista-cancelados" style="display:none;"></div>
+            <div id="listaCancelados" class="lista-historico" style="display:none;"></div>
         </div>
     `;
 
@@ -61,31 +85,80 @@ export async function montarPaginaPedidosPetshop(container, petshopId) {
     const inputBusca = document.getElementById("buscaPedidos");
     inputBusca.addEventListener("input", () => {
         filtroBusca = inputBusca.value;
+        limiteEntregues = LIMITE_HISTORICO;
+        limiteCancelados = LIMITE_HISTORICO;
         renderizarTudo();
     });
 
-    document.getElementById("btnToggleCancelados").addEventListener("click", () => {
-        const lista = document.getElementById("listaCancelados");
-        const seta = document.getElementById("setaCancelados");
+    ligarSecaoRecolhivel("btnToggleEntregues", "listaEntregues", "setaEntregues");
+    ligarSecaoRecolhivel("btnToggleCancelados", "listaCancelados", "setaCancelados");
+
+    await carregarLista();
+    timerAtualizacao = setInterval(carregarLista, INTERVALO_ATUALIZACAO_MS);
+}
+
+// Abre/fecha uma seção recolhível (Entregues, Cancelados) e vira a seta.
+function ligarSecaoRecolhivel(idBotao, idLista, idSeta) {
+    document.getElementById(idBotao).addEventListener("click", () => {
+        const lista = document.getElementById(idLista);
+        const seta = document.getElementById(idSeta);
         const aberto = lista.style.display !== "none";
         lista.style.display = aberto ? "none" : "block";
         seta.innerText = aberto ? "▾" : "▴";
     });
-
-    await carregarLista();
 }
 
+// Busca os pedidos e redesenha a tela.
 async function carregarLista() {
+    if (!document.getElementById("colunaNovos")) {
+        pararAtualizacaoPedidosPetshop();
+        return;
+    }
+
     try {
-        listaCompleta = await window.api.listarPedidosPetshop(petshopIdAtual, { status: "todos" });
+        listaCompleta = await window.api.listarPedidosPetshop({ status: "todos" });
+        avisarPedidosNovos();
         renderizarTudo();
     } catch (erro) {
         console.error("Erro ao carregar pedidos:", erro);
-        ["colunaNovos", "colunaEmPreparo", "colunaSaiuEntregue"].forEach((id) => {
+        ["colunaNovos", "colunaEmPreparo", "colunaSaiuParaEntrega"].forEach((id) => {
             const corpo = document.getElementById(id);
             if (corpo) corpo.innerHTML = `<p class="kanban-vazio" style="color:#e53935;">Erro ao carregar pedidos.</p>`;
         });
     }
+}
+
+// Destaca os pedidos novos em "Em Análise".
+function avisarPedidosNovos() {
+    const idsAgora = listaCompleta.filter((p) => p.etapa === 0).map((p) => p.id);
+
+    if (idsEmAnalise) {
+        const novos = idsAgora.filter((id) => !idsEmAnalise.has(id));
+        if (novos.length > 0) {
+            novos.forEach((id) => {
+                idsDestacados.add(id);
+                setTimeout(() => {
+                    idsDestacados.delete(id);
+                    document.querySelector(`[data-pedido-id="${id}"]`)?.classList.remove("kanban-card-novo");
+                }, DESTAQUE_PEDIDO_NOVO_MS);
+            });
+            mostrarNotificacao("Novo pedido recebido!");
+        }
+    }
+
+    idsEmAnalise = new Set(idsAgora);
+}
+
+// "há 5 min", "há 2 h", "há 3 dias" desde a chegada do pedido (criado_em).
+function tempoDesde(valor) {
+    if (!valor) return "";
+    const minutos = Math.max(0, Math.floor((Date.now() - new Date(valor).getTime()) / 60000));
+    if (minutos < 1) return "agora mesmo";
+    if (minutos < 60) return `há ${minutos} min`;
+    const horas = Math.floor(minutos / 60);
+    if (horas < 24) return `há ${horas} h`;
+    const dias = Math.floor(horas / 24);
+    return `há ${dias} dia${dias > 1 ? "s" : ""}`;
 }
 
 function aplicarFiltroBusca(lista) {
@@ -105,19 +178,50 @@ function renderizarTudo() {
 
     const novos = filtrada.filter((p) => p.etapa === 0);
     const emPreparo = filtrada.filter((p) => p.etapa === 1);
-    const saiuEntregue = filtrada.filter((p) => p.etapa === 2 || p.etapa === 3).sort((a, b) => a.etapa - b.etapa);
-    const cancelados = filtrada.filter((p) => p.etapa === 4);
+    const saiuParaEntrega = filtrada.filter((p) => p.etapa === 2);
+    const entregues = filtrada.filter((p) => p.etapa === 3);
+    const cancelados = filtrada
+        .filter((p) => p.etapa === 4)
+        .sort((a, b) => new Date(b.cancelado_em || b.criado_em) - new Date(a.cancelado_em || a.criado_em));
 
-    document.getElementById("contadorPedidosAtivos").innerText = `${novos.length + emPreparo.length + saiuEntregue.length} pedido(s) ativo(s)`;
+    const ativos = novos.length + emPreparo.length + saiuParaEntrega.length;
+    document.getElementById("contadorPedidosAtivos").innerText =
+        `${ativos} pedido(s) ativo(s) · ${entregues.length} entregues · ${cancelados.length} cancelados`;
     document.getElementById("contadorNovos").innerText = `${novos.length} pedido(s)`;
     document.getElementById("contadorPreparo").innerText = `${emPreparo.length} pedido(s)`;
-    document.getElementById("contadorEntrega").innerText = `${saiuEntregue.length} pedido(s)`;
+    document.getElementById("contadorEntrega").innerText = `${saiuParaEntrega.length} pedido(s)`;
+    document.getElementById("contadorEntregues").innerText = entregues.length;
     document.getElementById("contadorCancelados").innerText = cancelados.length;
 
     renderizarColuna("colunaNovos", novos, "novos");
     renderizarColuna("colunaEmPreparo", emPreparo, "preparo");
-    renderizarColuna("colunaSaiuEntregue", saiuEntregue, "entrega");
-    renderizarCancelados(cancelados);
+    renderizarColuna("colunaSaiuParaEntrega", saiuParaEntrega, "entrega");
+
+    renderizarHistorico("listaEntregues", entregues, {
+        limite: limiteEntregues,
+        mensagemVazia: "Nenhum pedido entregue.",
+        dataTexto: (p) => formatarData(p.criado_em),
+        aoVerMais: () => {
+            limiteEntregues += LIMITE_HISTORICO;
+            renderizarTudo();
+        }
+    });
+    renderizarHistorico("listaCancelados", cancelados, {
+        limite: limiteCancelados,
+        mensagemVazia: "Nenhum pedido cancelado.",
+        dataTexto: (p) => p.cancelado_em
+            ? `cancelado em ${formatarData(p.cancelado_em)}`
+            : `${formatarData(p.criado_em)} (data do pedido)`,
+        detalheHtml: (p) => `<p class="item-historico-detalhe">Motivo: ${escaparHtml(p.motivo_cancelamento || "Não informado")}</p>`,
+        aoVerMais: () => {
+            limiteCancelados += LIMITE_HISTORICO;
+            renderizarTudo();
+        }
+    });
+}
+
+function formatarData(valor) {
+    return valor ? new Date(valor).toLocaleDateString("pt-BR") : "—";
 }
 
 function cardPedido(p, tipoColuna) {
@@ -135,16 +239,19 @@ function cardPedido(p, tipoColuna) {
             <button class="btn-cancelar-kanban" data-cancelar="${p.id}">❌ Cancelar</button>
         `;
     } else if (tipoColuna === "entrega") {
-        acoes = p.etapa === 2
-            ? `<button class="btn-aprovar btn-avancar-kanban" data-avancar="${p.id}" data-nova-etapa="3">✅ Confirmar Entrega</button>`
-            : `${criarBadgeStatus("Entregue")}`;
+        acoes = `<button class="btn-aprovar btn-avancar-kanban" data-avancar="${p.id}" data-nova-etapa="3">✅ Confirmar Entrega</button>`;
     }
 
+    const quantidade = Number(p.quantidade_itens) || 0;
+    const chegada = tipoColuna === "novos" && p.criado_em ? ` · chegou ${tempoDesde(p.criado_em)}` : "";
+    const classeDestaque = idsDestacados.has(p.id) ? " kanban-card-novo" : "";
+
     return `
-        <div class="kanban-card">
+        <div class="kanban-card${classeDestaque}" data-pedido-id="${p.id}">
             <div>
                 <button class="kanban-card-numero" data-abrir-painel="${p.id}">${numero}</button>
-                <button class="kanban-card-cliente" data-abrir-painel="${p.id}">${p.cliente_nome || "Cliente removido"}</button>
+                <button class="kanban-card-cliente" data-abrir-painel="${p.id}">${escaparHtml(p.cliente_nome || "Cliente removido")}</button>
+                <p class="kanban-card-info">${formatarMoeda(p.total)} · ${quantidade} ${quantidade === 1 ? "item" : "itens"}${chegada}</p>
             </div>
             <div class="kanban-card-acoes">${acoes}</div>
         </div>
@@ -173,30 +280,39 @@ function renderizarColuna(idCorpo, lista, tipoColuna) {
     });
 }
 
-function renderizarCancelados(cancelados) {
-    const lista = document.getElementById("listaCancelados");
+// Lista de uma seção recolhível (Entregues, Cancelados).
+function renderizarHistorico(idLista, pedidos, opcoes) {
+    const lista = document.getElementById(idLista);
     if (!lista) return;
 
-    if (cancelados.length === 0) {
-        lista.innerHTML = `<p class="kanban-vazio">Nenhum pedido cancelado.</p>`;
+    if (pedidos.length === 0) {
+        lista.innerHTML = `<p class="kanban-vazio">${opcoes.mensagemVazia}</p>`;
         return;
     }
 
-    lista.innerHTML = cancelados.map((p) => {
-        const dataCancelamento = p.cancelado_em
-            ? new Date(p.cancelado_em).toLocaleDateString("pt-BR")
-            : (p.criado_em ? new Date(p.criado_em).toLocaleDateString("pt-BR") : "—");
+    const visiveis = pedidos.slice(0, opcoes.limite);
+    const restantes = pedidos.length - visiveis.length;
 
-        return `
-            <div class="item-cancelado">
-                <div class="item-cancelado-linha-principal">
-                    <span><strong>#${String(p.id).padStart(4, "0")}</strong> — ${p.cliente_nome || "Cliente removido"}</span>
-                    <span>${dataCancelamento}</span>
-                </div>
-                <p class="item-cancelado-motivo">Motivo: ${p.motivo_cancelamento || "Não informado"}</p>
+    lista.innerHTML = visiveis.map((p) => `
+        <div class="item-historico">
+            <div class="item-historico-linha-principal">
+                <span><strong>#${String(p.id).padStart(4, "0")}</strong> — ${escaparHtml(p.cliente_nome || "Cliente removido")}</span>
+                <span class="item-historico-acoes">
+                    <span>${formatarMoeda(p.total)} · ${opcoes.dataTexto(p)}</span>
+                    <button class="btn-roxo-discreto btn-acao-tabela" data-abrir-painel="${p.id}">Ver detalhes</button>
+                </span>
             </div>
-        `;
-    }).join("");
+            ${opcoes.detalheHtml ? opcoes.detalheHtml(p) : ""}
+        </div>
+    `).join("") + (restantes > 0
+        ? `<button class="btn-secundario btn-ver-mais" data-ver-mais>Ver mais (${restantes} restante(s))</button>`
+        : "");
+
+    lista.querySelectorAll("[data-abrir-painel]").forEach((botao) => {
+        botao.addEventListener("click", () => abrirPainelDetalhes(Number(botao.dataset.abrirPainel)));
+    });
+    const botaoVerMais = lista.querySelector("[data-ver-mais]");
+    if (botaoVerMais) botaoVerMais.addEventListener("click", opcoes.aoVerMais);
 }
 
 async function avancarStatus(id, novaEtapa) {
@@ -208,7 +324,7 @@ async function avancarStatus(id, novaEtapa) {
     if (!confirmado) return;
 
     try {
-        const resultado = await window.api.atualizarStatusPedidoPetshop(id, petshopIdAtual, novaEtapa);
+        const resultado = await window.api.atualizarStatusPedidoPetshop(id, novaEtapa);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao(`Pedido #${String(id).padStart(4, "0")} atualizado para ${ETAPA_LABELS[novaEtapa]}!`);
         await carregarLista();
@@ -218,65 +334,13 @@ async function avancarStatus(id, novaEtapa) {
     }
 }
 
-// Modal próprio (não usa confirmarAcao porque precisa de um textarea
-// obrigatório) — mesma linguagem visual do modal de confirmação genérico
-// (overlay + card-confirmacao), só com um campo de motivo no meio.
-function solicitarMotivoCancelamento(numeroFormatado) {
-    return new Promise((resolve) => {
-        const overlay = document.createElement("div");
-        overlay.className = "overlay-confirmacao";
-        overlay.innerHTML = `
-            <div class="card-confirmacao">
-                <h3>Cancelar pedido</h3>
-                <p>Informe o motivo do cancelamento do pedido ${numeroFormatado}. Essa ação não pode ser desfeita.</p>
-                <textarea id="motivoCancelamentoTexto" class="textarea-formulario" placeholder="Ex.: Produto fora de estoque, cliente desistiu..."></textarea>
-                <small class="mensagem-erro-campo" id="motivoCancelamentoErro" style="display:none;">Informe o motivo do cancelamento.</small>
-                <div class="acoes-confirmacao">
-                    <button class="btn-secundario" data-acao="voltar">Voltar</button>
-                    <button class="btn-desativar" data-acao="confirmar">Cancelar Pedido</button>
-                </div>
-            </div>
-        `;
-
-        function fechar(resultado) {
-            overlay.remove();
-            resolve(resultado);
-        }
-
-        const textarea = overlay.querySelector("#motivoCancelamentoTexto");
-        const mensagemErro = overlay.querySelector("#motivoCancelamentoErro");
-
-        overlay.addEventListener("click", (evento) => {
-            if (evento.target === overlay) fechar(null);
-        });
-        overlay.querySelector('[data-acao="voltar"]').addEventListener("click", () => fechar(null));
-        overlay.querySelector('[data-acao="confirmar"]').addEventListener("click", () => {
-            const motivo = textarea.value.trim();
-            if (!motivo) {
-                textarea.classList.add("campo-invalido");
-                mensagemErro.style.display = "block";
-                textarea.focus();
-                return;
-            }
-            fechar(motivo);
-        });
-        textarea.addEventListener("input", () => {
-            textarea.classList.remove("campo-invalido");
-            mensagemErro.style.display = "none";
-        });
-
-        document.body.appendChild(overlay);
-        setTimeout(() => textarea.focus(), 100);
-    });
-}
-
 async function cancelarPedido(id) {
     const numeroFormatado = `#${String(id).padStart(4, "0")}`;
     const motivo = await solicitarMotivoCancelamento(numeroFormatado);
     if (!motivo) return;
 
     try {
-        const resultado = await window.api.atualizarStatusPedidoPetshop(id, petshopIdAtual, 4, motivo);
+        const resultado = await window.api.atualizarStatusPedidoPetshop(id, 4, motivo);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao(`Pedido ${numeroFormatado} cancelado.`);
         await carregarLista();
@@ -306,41 +370,37 @@ async function abrirPainelDetalhes(id) {
     let endereco = null;
     try {
         [itens, endereco] = await Promise.all([
-            window.api.obterItensPedidoPetshop(id, petshopIdAtual),
+            window.api.obterItensPedidoPetshop(id),
             window.api.obterEnderecoUsuarioPetshop(pedido.usuario_id)
         ]);
     } catch (erro) {
         console.error("Erro ao carregar detalhes do pedido:", erro);
     }
 
-    if (!lateral.classList.contains("ativo")) return; // usuário já fechou antes da resposta chegar
+    if (!lateral.classList.contains("ativo")) return;
 
     const itensHtml = itens.length === 0
         ? "<p>Nenhum item registrado para este pedido.</p>"
-        : itens.map((i) => `<p>${i.quantidade}x <strong>${i.nome}</strong> — R$ ${Number(i.preco_unitario).toFixed(2)} cada</p>`).join("");
-
-    const enderecoHtml = endereco
-        ? `<p>${endereco.rua}, ${endereco.numero} — ${endereco.bairro}</p><p>${endereco.cidade} / ${endereco.estado} — CEP ${endereco.cep}</p>`
-        : "<p>Endereço não cadastrado.</p>";
+        : itens.map((i) => `<p>${escaparHtml(i.quantidade)}x <strong>${escaparHtml(i.nome)}</strong> — ${formatarMoeda(i.preco_unitario)} cada</p>`).join("");
 
     conteudo.innerHTML = `
         <h2>Pedido ${numeroFormatado}</h2>
 
         <div class="secao-detalhes-lateral">
             <h3 class="titulo-secao-detalhes">👤 Cliente</h3>
-            <p><strong>Nome:</strong> ${pedido.cliente_nome || "Cliente removido"}</p>
-            <p><strong>Telefone:</strong> ${pedido.cliente_telefone || "Não informado"}</p>
+            <p><strong>Nome:</strong> ${escaparHtml(pedido.cliente_nome || "Cliente removido")}</p>
+            <p><strong>Telefone:</strong> ${escaparHtml(pedido.cliente_telefone || "Não informado")}</p>
         </div>
 
         <div class="secao-detalhes-lateral">
             <h3 class="titulo-secao-detalhes">📍 Endereço de Entrega</h3>
-            ${enderecoHtml}
+            ${enderecoHtml(endereco)}
         </div>
 
         <div class="secao-detalhes-lateral">
             <h3 class="titulo-secao-detalhes">📦 Itens</h3>
             ${itensHtml}
-            <p style="margin-top:10px;"><strong>Total:</strong> R$ ${Number(pedido.total).toFixed(2)}</p>
+            <p style="margin-top:10px;"><strong>Total:</strong> ${formatarMoeda(pedido.total)}</p>
         </div>
 
         <div class="secao-detalhes-lateral">

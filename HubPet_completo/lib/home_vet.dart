@@ -7,6 +7,7 @@ import 'descricao_projeto.dart';
 import 'sobre_nos.dart';
 import 'busca_usuarios.dart';
 import 'telainicio.dart';
+import 'acessibilidade_tela.dart';
 
 class HomeVet extends StatelessWidget {
   const HomeVet({super.key});
@@ -36,7 +37,6 @@ class HomeVet extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Card do veterinário
                     Row(
                       children: [
                         const CircleAvatar(
@@ -86,7 +86,6 @@ class HomeVet extends StatelessWidget {
                     const SizedBox(height: 15),
                     const Divider(),
 
-                    // ── Itens principais ──
                     _item(context, Icons.badge, 'Meus dados', const DadosVet()),
                     _item(context, Icons.medical_services, 'Meus serviços',
                         const ServicosVetPage()),
@@ -95,7 +94,6 @@ class HomeVet extends StatelessWidget {
 
                     const Divider(),
 
-                    // ── Projeto integrador ──
                     _item(context, Icons.info_outline, 'Sobre o Projeto',
                         const DescricaoProjetoPage()),
                     _item(context, Icons.people_outline, 'Sobre Nós',
@@ -105,7 +103,11 @@ class HomeVet extends StatelessWidget {
 
                     const Divider(),
 
-                    // ── Sair ──
+                    _item(context, Icons.accessibility_new, 'Acessibilidade',
+                        const AcessibilidadePage()),
+
+                    const Divider(),
+
                     ListTile(
                       leading: const Icon(Icons.logout, color: Colors.red),
                       title: const Text('Sair',

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'api_client.dart';
+import 'app_data.dart';
 import 'models/petshop.dart';
 import 'services/petshop_service.dart';
+import 'services/endereco_service.dart';
+import 'services/geocoding_service.dart';
 import 'produtos_petshop.dart';
+import 'petshops_favoritos.dart';
 import 'rodape_nav.dart';
 import 'recarrega_ao_voltar.dart';
 
@@ -13,25 +17,68 @@ class ListaPetshopsPage extends StatefulWidget {
   State<ListaPetshopsPage> createState() => _ListaPetshopsPageState();
 }
 
+enum _Ordenacao { relevancia, nota, distancia }
+
 class _ListaPetshopsPageState extends State<ListaPetshopsPage>
     with RouteAware, RecarregaAoVoltar {
   final _buscaCtrl = TextEditingController();
 
   List<Petshop> _petshops = [];
   List<Petshop> _petshopsFiltrados = [];
-  List<bool> _favoritos = [];
   bool _carregando = true;
   String? _erro;
+
+  _Ordenacao _ordenacao = _Ordenacao.relevancia;
+  double _notaMinima = 0;
+  double _distanciaMaxima = 50;
+
+  Coordenadas? _coordUsuario;
 
   @override
   void initState() {
     super.initState();
     _carregarPetshops();
+    _geocodificarEnderecoUsuario();
+  }
+
+  Future<void> _geocodificarEnderecoUsuario() async {
+    final usuarioId = AppData.usuarioLogado?.id;
+    if (usuarioId == null) return;
+    try {
+      final enderecos = await EnderecoService.listar(usuarioId);
+      if (enderecos.isEmpty) return;
+      final e = enderecos.firstWhere((e) => e.principal,
+          orElse: () => enderecos.first);
+      final texto = '${e.rua}, ${e.numero}, ${e.bairro}, ${e.cidade}';
+      final coord = await GeocodingService.buscar(texto);
+      if (coord != null && mounted) {
+        _coordUsuario = coord;
+        _aplicarFiltro();
+      }
+    } catch (_) {
+    }
+  }
+
+  double _distanciaKm(Petshop p) {
+    if (_coordUsuario != null) {
+      final real = p.distanciaRealKm(_coordUsuario!.lat, _coordUsuario!.lng);
+      if (real != null) return real;
+    }
+    return p.distanciaKm;
+  }
+
+  String _distanciaExibida(Petshop p) {
+    if (_coordUsuario != null) {
+      final real =
+          p.distanciaRealFormatada(_coordUsuario!.lat, _coordUsuario!.lng);
+      if (real != null) return real;
+    }
+    return p.distanciaFormatada;
   }
 
   @override
   void recarregar() => _carregarPetshops();
-
+//4
   Future<void> _carregarPetshops() async {
     setState(() {
       _carregando = true;
@@ -41,10 +88,9 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
       final petshops = await PetshopService.listar();
       setState(() {
         _petshops = petshops;
-        _petshopsFiltrados = List.from(petshops);
-        _favoritos = List.generate(petshops.length, (_) => false);
         _carregando = false;
       });
+      _aplicarFiltro();
     } on ApiException catch (e) {
       setState(() {
         _erro = e.mensagem;
@@ -53,12 +99,152 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
     }
   }
 
-  void _filtrar(String texto) {
-    setState(() {
-      _petshopsFiltrados = _petshops
-          .where((p) => p.nome.toLowerCase().contains(texto.toLowerCase()))
-          .toList();
-    });
+  void _filtrar(String texto) => _aplicarFiltro();
+
+  void _aplicarFiltro() {
+    var lista = _petshops.where((p) {
+      final bateBusca =
+          p.nome.toLowerCase().contains(_buscaCtrl.text.toLowerCase());
+      final bateNota = p.nota >= _notaMinima;
+      final bateDistancia = _distanciaKm(p) <= _distanciaMaxima;
+      return bateBusca && bateNota && bateDistancia;
+    }).toList();
+
+    switch (_ordenacao) {
+      case _Ordenacao.relevancia:
+        break;
+      case _Ordenacao.nota:
+        lista.sort((a, b) => b.nota.compareTo(a.nota));
+        break;
+      case _Ordenacao.distancia:
+        lista.sort((a, b) => _distanciaKm(a).compareTo(_distanciaKm(b)));
+        break;
+    }
+
+    setState(() => _petshopsFiltrados = lista);
+  }
+
+  bool get _filtroAtivo =>
+      _ordenacao != _Ordenacao.relevancia || _notaMinima > 0 || _distanciaMaxima < 50;
+
+  void _abrirFiltros() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateSheet) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Text('Ordenar e filtrar',
+                  style:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 16),
+              const Text('Ordenar por',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Relevância'),
+                    selected: _ordenacao == _Ordenacao.relevancia,
+                    onSelected: (_) => setStateSheet(
+                        () => _ordenacao = _Ordenacao.relevancia),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Nota'),
+                    selected: _ordenacao == _Ordenacao.nota,
+                    onSelected: (_) =>
+                        setStateSheet(() => _ordenacao = _Ordenacao.nota),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Distância'),
+                    selected: _ordenacao == _Ordenacao.distancia,
+                    onSelected: (_) => setStateSheet(
+                        () => _ordenacao = _Ordenacao.distancia),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text('Nota mínima: ${_notaMinima.toStringAsFixed(1)} ⭐',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              Slider(
+                value: _notaMinima,
+                min: 0,
+                max: 5,
+                divisions: 10,
+                activeColor: const Color(0xFF6A0DAD),
+                label: _notaMinima.toStringAsFixed(1),
+                onChanged: (v) => setStateSheet(() => _notaMinima = v),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                  'Distância máxima: ${_distanciaMaxima >= 50 ? 'sem limite' : '${_distanciaMaxima.toStringAsFixed(0)} km'}',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              Slider(
+                value: _distanciaMaxima,
+                min: 1,
+                max: 50,
+                divisions: 49,
+                activeColor: const Color(0xFF6A0DAD),
+                label: _distanciaMaxima >= 50
+                    ? 'sem limite'
+                    : '${_distanciaMaxima.toStringAsFixed(0)} km',
+                onChanged: (v) => setStateSheet(() => _distanciaMaxima = v),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setStateSheet(() {
+                          _ordenacao = _Ordenacao.relevancia;
+                          _notaMinima = 0;
+                          _distanciaMaxima = 50;
+                        });
+                      },
+                      child: const Text('Limpar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A0DAD)),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _aplicarFiltro();
+                      },
+                      child: const Text('Aplicar',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -82,7 +268,6 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
           bottom: false,
           child: Column(
             children: [
-              // Topo
               Padding(
                 padding: const EdgeInsets.all(15),
                 child: Row(
@@ -90,20 +275,42 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
                     ),
-                    const Text(
-                      "Petshops",
-                      style: TextStyle(
+                    const Expanded(
+                      child: Text(
+                        "Petshops",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _filtroAtivo
+                            ? Icons.filter_alt
+                            : Icons.filter_alt_outlined,
                         color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                      ),
+                      tooltip: 'Ordenar e filtrar',
+                      onPressed: _abrirFiltros,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.favorite, color: Colors.white),
+                      tooltip: 'Ver favoritos',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PetshopsFavoritosPage(),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // Campo de busca
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: TextField(
@@ -115,6 +322,7 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
                     suffixIcon: _buscaCtrl.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
+                            tooltip: 'Limpar busca',
                             onPressed: () {
                               _buscaCtrl.clear();
                               _filtrar('');
@@ -134,7 +342,6 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
 
               const SizedBox(height: 15),
 
-              // Lista
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(15),
@@ -196,11 +403,7 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
     }
     return ListView.builder(
       itemCount: _petshopsFiltrados.length,
-      itemBuilder: (context, index) {
-        // índice real para favoritos (baseado na lista original)
-        final realIndex = _petshops.indexOf(_petshopsFiltrados[index]);
-        return _itemPetshop(_petshopsFiltrados[index], realIndex);
-      },
+      itemBuilder: (context, index) => _itemPetshop(_petshopsFiltrados[index]),
     );
   }
 
@@ -212,13 +415,14 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
           petshopId: p.id,
           nome: p.nome,
           nota: p.notaFormatada,
-          distancia: p.distanciaFormatada,
+          distancia: _distanciaExibida(p),
         ),
       ),
     );
   }
 
-  Widget _itemPetshop(Petshop p, int index) {
+  Widget _itemPetshop(Petshop p) {
+    final favorito = AppData.ehFavorito(p.id);
     return GestureDetector(
       onTap: () => _abrirPetshop(p),
       child: Container(
@@ -250,17 +454,28 @@ class _ListaPetshopsPageState extends State<ListaPetshopsPage>
                       const Icon(Icons.star, color: Colors.orange, size: 16),
                       const SizedBox(width: 4),
                       Text(p.notaFormatada),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.location_on,
+                          color: Colors.grey, size: 14),
+                      const SizedBox(width: 2),
+                      Text(_distanciaExibida(p),
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 12)),
                     ],
                   ),
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: () =>
-                  setState(() => _favoritos[index] = !_favoritos[index]),
-              child: Icon(
-                _favoritos[index] ? Icons.favorite : Icons.favorite_border,
-                color: Colors.orange,
+            Semantics(
+              button: true,
+              label: favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
+              child: GestureDetector(
+                onTap: () =>
+                    setState(() => AppData.alternarFavorito(p.id)),
+                child: Icon(
+                  favorito ? Icons.favorite : Icons.favorite_border,
+                  color: Colors.orange,
+                ),
               ),
             ),
           ],

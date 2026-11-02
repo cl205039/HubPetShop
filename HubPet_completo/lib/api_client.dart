@@ -1,9 +1,3 @@
-// ============================================================
-// API CLIENT — wrapper fino sobre o pacote `http`, usado por
-// todos os arquivos em lib/services/. Centraliza URL base
-// (via ApiConfig), headers, timeout e tratamento de erro, para
-// as telas só precisarem tratar um tipo de exceção (ApiException).
-// ============================================================
 
 import 'dart:async';
 import 'dart:convert';
@@ -13,9 +7,6 @@ import 'package:http/http.dart' as http;
 
 import 'api_config.dart';
 
-/// Erro lançado por qualquer chamada à API. `mensagem` já vem pronta
-/// para exibir num SnackBar; `statusCode`/`codigo` ajudam os services
-/// a tratar casos específicos (ex.: 409 de e-mail já cadastrado).
 class ApiException implements Exception {
   final String mensagem;
   final int? statusCode;
@@ -47,11 +38,6 @@ class ApiClient {
     );
   }
 
-  // Serializa o corpo em JSON **só com ASCII**: todo caractere não-ASCII
-  // vira escape `\uXXXX` (continua sendo JSON válido — o servidor
-  // reconstrói o texto no json_decode). Isso contorna endpoints da API
-  // que quebram o parse quando o corpo cru vem com acento (ç, ã, ê...),
-  // gravando tudo nulo sem dar erro. Ver docapi.md, seção Pedidos.
   static String _jsonAscii(Object? valor) {
     final texto = jsonEncode(valor);
     final sb = StringBuffer();
@@ -61,7 +47,6 @@ class ApiClient {
       } else if (rune <= 0xFFFF) {
         sb.write('\\u${rune.toRadixString(16).padLeft(4, '0')}');
       } else {
-        // Fora do BMP (ex.: emoji) → par surrogate.
         final v = rune - 0x10000;
         final hi = 0xD800 + (v >> 10);
         final lo = 0xDC00 + (v & 0x3FF);
@@ -120,7 +105,6 @@ class ApiClient {
       throw ApiException('Falha inesperada ao falar com o servidor.');
     }
 
-    // 204 (No Content) ou corpo vazio: sucesso sem dado para devolver.
     if (resposta.statusCode == 204 || resposta.bodyBytes.isEmpty) {
       if (resposta.statusCode >= 200 && resposta.statusCode < 300) {
         return null;

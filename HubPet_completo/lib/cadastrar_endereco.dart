@@ -1,4 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+
 import 'app_data.dart';
 import 'api_client.dart';
 import 'models/endereco.dart';
@@ -17,13 +24,89 @@ class _CadastrarEnderecoPageState
   final _formKey = GlobalKey<FormState>();
 
   final tituloController = TextEditingController();
+  final cepController = TextEditingController();
   final ruaController = TextEditingController();
   final numeroController = TextEditingController();
   final complementoController = TextEditingController();
   final bairroController = TextEditingController();
   final cidadeController = TextEditingController();
 
+  final _numeroFocus = FocusNode();
+
   bool _enviando = false;
+  bool _buscandoCep = false;
+
+  @override
+  void dispose() {
+    tituloController.dispose();
+    cepController.dispose();
+    ruaController.dispose();
+    numeroController.dispose();
+    complementoController.dispose();
+    bairroController.dispose();
+    cidadeController.dispose();
+    _numeroFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _buscarCep() async {
+    final cep = cepController.text.replaceAll(RegExp(r'\D'), '');
+    if (cep.length != 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe um CEP com 8 dígitos')),
+      );
+      return;
+    }
+
+    setState(() => _buscandoCep = true);
+    try {
+      final resposta = await http
+          .get(Uri.parse('https://viacep.com.br/ws/$cep/json/'))
+          .timeout(const Duration(seconds: 8));
+
+      final dados = jsonDecode(utf8.decode(resposta.bodyBytes))
+          as Map<String, dynamic>;
+
+      if (resposta.statusCode != 200 || dados['erro'] == true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('CEP não encontrado')),
+        );
+        return;
+      }
+
+      ruaController.text = dados['logradouro'] as String? ?? '';
+      bairroController.text = dados['bairro'] as String? ?? '';
+      cidadeController.text = dados['localidade'] as String? ?? '';
+      if (complementoController.text.trim().isEmpty) {
+        complementoController.text = dados['complemento'] as String? ?? '';
+      }
+
+      if (!mounted) return;
+      _numeroFocus.requestFocus();
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tempo esgotado ao buscar o CEP. Tente novamente.'),
+        ),
+      );
+    } on SocketException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sem conexão para buscar o CEP.'),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível buscar o CEP.')),
+      );
+    } finally {
+      if (mounted) setState(() => _buscandoCep = false);
+    }
+  }
 
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
@@ -74,12 +157,56 @@ class _CadastrarEnderecoPageState
             children: [
               buildField("Nome (Casa, Trabalho...)", tituloController,
                   obrigatorio: false),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TextFormField(
+                  controller: cepController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(8),
+                  ],
+                  onChanged: (v) {
+                    if (v.length == 8) _buscarCep();
+                  },
+                  validator: (v) {
+                    final digitos = v?.replaceAll(RegExp(r'\D'), '') ?? '';
+                    if (digitos.isEmpty) return 'Informe o CEP';
+                    if (digitos.length != 8) return 'CEP inválido (8 dígitos)';
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    labelText: 'CEP *',
+                    hintText: 'Só números — preenche o endereço',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    suffixIcon: _buscandoCep
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.search),
+                            tooltip: 'Buscar endereço pelo CEP',
+                            onPressed: _buscarCep,
+                          ),
+                  ),
+                ),
+              ),
               buildField("Rua / Avenida", ruaController),
               Row(
                 children: [
                   Expanded(
                     flex: 2,
-                    child: buildField("Número", numeroController),
+                    child: buildField("Número", numeroController,
+                        focusNode: _numeroFocus),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -121,11 +248,12 @@ class _CadastrarEnderecoPageState
   }
 
   Widget buildField(String label, TextEditingController controller,
-      {bool obrigatorio = true}) {
+      {bool obrigatorio = true, FocusNode? focusNode}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextFormField(
         controller: controller,
+        focusNode: focusNode,
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white,

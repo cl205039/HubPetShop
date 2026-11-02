@@ -1,19 +1,11 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
-import { criarBadgeStatus } from "../shared/ui.js";
+import { criarBadgeStatus, escaparHtml, formatarMoeda } from "../shared/ui.js";
 import { confirmarAcao } from "../shared/confirmacao.js";
 import { paginar, renderizarControlesPaginacao, ligarControlesPaginacao } from "../shared/paginacao.js";
 
 const ITENS_POR_PAGINA = 10;
 
-// Formatação manual (em vez de toLocaleString) pra garantir "R$ X.XXX,XX"
-// (ponto como milhar, vírgula como decimal) mesmo se o runtime não tiver os
-// dados de localidade pt-BR carregados.
-function formatarMoeda(valor) {
-    const [inteiro, decimal] = (Number(valor) || 0).toFixed(2).split(".");
-    const inteiroComMilhar = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return `R$ ${inteiroComMilhar},${decimal}`;
-}
-
+// Formata em reais (R$ X.XXX,XX).
 function truncarEmail(email) {
     if (!email) return "";
     return email.length > 25 ? `${email.slice(0, 25)}…` : email;
@@ -33,7 +25,7 @@ export async function montarPaginaUsuarios(container) {
         <div class="painel">
             <h2>Usuários e Pets</h2>
             <div class="topo-tabela-container">
-                <input type="text" id="buscaUsuario" class="input-busca-moderno" placeholder="Buscar por nome, e-mail ou CPF..." value="${filtroBusca}">
+                <input type="text" id="buscaUsuario" class="input-busca-moderno" placeholder="Buscar por nome, e-mail ou CPF..." value="${escaparHtml(filtroBusca)}">
             </div>
             <table class="tabela-sem-quebra tabela-usuarios">
                 <thead>
@@ -99,8 +91,8 @@ function renderizarTabela() {
 
         return `
             <tr>
-                <td class="celula-truncar" title="${u.nome}"><strong>${u.nome}</strong></td>
-                <td class="celula-truncar" title="${u.email}">${truncarEmail(u.email)}</td>
+                <td class="celula-truncar" title="${escaparHtml(u.nome)}"><strong>${escaparHtml(u.nome)}</strong></td>
+                <td class="celula-truncar" title="${escaparHtml(u.email)}">${escaparHtml(truncarEmail(u.email))}</td>
                 <td>${u.quantidade_pets}</td>
                 <td class="celula-preco">${formatarMoeda(u.total_gasto)}</td>
                 <td>${criarBadgeStatus(status)}</td>
@@ -169,16 +161,16 @@ async function abrirPerfil(id) {
         const pets = await window.api.obterPetsUsuario(id);
         const petsHtml = pets.length === 0
             ? "<p>Nenhum pet cadastrado.</p>"
-            : pets.map((p) => `<p>🐾 <strong>${p.nome}</strong> — ${p.tipo || "?"} ${p.raca ? `(${p.raca})` : ""}</p>`).join("");
+            : pets.map((p) => `<p>🐾 <strong>${escaparHtml(p.nome)}</strong> — ${escaparHtml(p.tipo || "?")} ${p.raca ? `(${escaparHtml(p.raca)})` : ""}</p>`).join("");
 
         conteudo.innerHTML = `
-            <div class="header-lateral-detalhes"><h2>${usuario.nome}</h2></div>
+            <div class="header-lateral-detalhes"><h2>${escaparHtml(usuario.nome)}</h2></div>
 
             <div class="secao-detalhes-lateral">
                 <h3 class="titulo-secao-detalhes">📋 Dados Gerais</h3>
-                <p><strong>E-mail:</strong> ${usuario.email}</p>
-                <p><strong>Telefone:</strong> ${usuario.telefone || "Não informado"}</p>
-                <p><strong>CPF:</strong> ${usuario.cpf}</p>
+                <p><strong>E-mail:</strong> ${escaparHtml(usuario.email)}</p>
+                <p><strong>Telefone:</strong> ${escaparHtml(usuario.telefone || "Não informado")}</p>
+                <p><strong>CPF:</strong> ${escaparHtml(usuario.cpf)}</p>
                 <p><strong>Status:</strong> ${usuario.ativo ? "Ativo" : "Inativo"}</p>
                 <p><strong>Total Gasto:</strong> ${formatarMoeda(usuario.total_gasto)}</p>
             </div>

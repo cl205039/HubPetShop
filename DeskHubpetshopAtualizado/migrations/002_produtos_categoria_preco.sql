@@ -1,6 +1,4 @@
--- Migração aditiva: categorias dinâmicas + preço em produtos do parceiro.
--- Não remove nem quebra nada usado pela API do app Flutter (que só LÊ
--- produtos.categoria, nunca insere nela).
+-- Migração 002: categorias dinâmicas e preço em produtos (somente aditiva).
 
 USE hubpetshop;
 

@@ -1,4 +1,5 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
+import { escaparHtml, formatarDataAgendamento } from "../shared/ui.js";
 import { confirmarAcao } from "../shared/confirmacao.js";
 import { paginar, renderizarControlesPaginacao, ligarControlesPaginacao } from "../shared/paginacao.js";
 
@@ -15,7 +16,7 @@ export async function montarPaginaAgendamentosAdmin(container) {
     container.innerHTML = `
         <div class="painel">
             <div class="topo-tabela-container">
-                <input type="text" id="buscaAgendamentoAdmin" class="input-busca-moderno" placeholder="Buscar por tutor ou pet..." value="${filtroBusca}">
+                <input type="text" id="buscaAgendamentoAdmin" class="input-busca-moderno" placeholder="Buscar por tutor ou pet..." value="${escaparHtml(filtroBusca)}">
                 <select id="filtroStatusAgendamentoAdmin" class="select-filtro">
                     <option value="todos" ${filtroStatus === "todos" ? "selected" : ""}>Todos os Status</option>
                     <option value="Pendente" ${filtroStatus === "Pendente" ? "selected" : ""}>Pendente</option>
@@ -99,7 +100,7 @@ function atualizarOpcoesEstabelecimento() {
 
     select.innerHTML = `
         <option value="todos">Todos os Estabelecimentos</option>
-        ${nomes.map((nome) => `<option value="${nome}" ${valorAtual === nome ? "selected" : ""}>${nome}</option>`).join("")}
+        ${nomes.map((nome) => `<option value="${escaparHtml(nome)}" ${valorAtual === nome ? "selected" : ""}>${escaparHtml(nome)}</option>`).join("")}
     `;
 
     if (!nomes.includes(valorAtual) && valorAtual !== "todos") {
@@ -108,35 +109,21 @@ function atualizarOpcoesEstabelecimento() {
     }
 }
 
-// Extrai { data: "DD/MM/AAAA", hora: "HH:MM" } de um jeito tolerante a
-// formatos diferentes — `data_hora` (DATETIME real) é a fonte confiável,
-// mas alguns agendamentos só têm `data` como texto, às vezes já incluindo
-// hora embutida (ex.: "2026-08-31 10:40:00" em vez de só a data), o que
-// antes quebrava a exibição ("31 10:40:00/08/2026").
+// Extrai data e hora de um agendamento.
 function dataHoraExibicao(ag) {
-    if (ag.data_hora) {
-        const d = new Date(ag.data_hora);
-        if (!Number.isNaN(d.getTime())) {
-            return {
-                data: d.toLocaleDateString("pt-BR"),
-                hora: ag.hora || d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-            };
-        }
+    const data = formatarDataAgendamento(ag);
+    if (ag.hora) return { data, hora: ag.hora };
+
+    const d = ag.data_hora ? new Date(ag.data_hora) : null;
+    if (d && !Number.isNaN(d.getTime())) {
+        return { data, hora: d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) };
     }
 
-    if (ag.data) {
-        const [dataPura, horaEmbutida] = String(ag.data).split(/[T ]/);
-        const [ano, mes, dia] = (dataPura || "").split("-");
-        const data = (ano && mes && dia) ? `${dia}/${mes}/${ano}` : "—";
-        const hora = ag.hora || (horaEmbutida ? horaEmbutida.slice(0, 5) : "—");
-        return { data, hora };
-    }
-
-    return { data: "—", hora: ag.hora || "—" };
+    const horaEmbutida = String(ag.data || "").split(/[T ]/)[1];
+    return { data, hora: horaEmbutida ? horaEmbutida.slice(0, 5) : "—" };
 }
 
-// Alguns pets vêm com emoji no nome (cadastro do app do consumidor) — some
-// só o emoji na exibição da tabela, sem mexer no dado salvo.
+// Remove emoji do nome do pet na exibição.
 function removerEmoji(texto) {
     return (texto || "").replace(/[\u{1F300}-\u{1FFFF}]/gu, "").trim();
 }
@@ -149,7 +136,7 @@ function badgeStatusAgendamento(status) {
         "Cancelado": "status-agendamento-cancelado"
     };
     const classe = mapa[status] || "status-neutro";
-    return `<span class="status-badge ${classe}">${status}</span>`;
+    return `<span class="status-badge ${classe}">${escaparHtml(status)}</span>`;
 }
 
 function botoesAcao(ag) {
@@ -208,11 +195,11 @@ function renderizarTabela() {
 
         return `
             <tr>
-                <td class="celula-data">${data}</td>
-                <td class="celula-data">${hora}</td>
-                <td class="celula-truncar" title="${petLimpo} (${ag.tutor_nome || "Tutor removido"})">${petLimpo} (${ag.tutor_nome || "Tutor removido"})</td>
-                <td class="celula-truncar" title="${ag.servico || "—"}">${ag.servico || "—"}</td>
-                <td class="celula-truncar" title="${ag.petshop_nome || ag.local || "Não vinculado"}">${ag.petshop_nome || (ag.local ? ag.local : `<span class="texto-nao-vinculado">Não vinculado</span>`)}</td>
+                <td class="celula-data">${escaparHtml(data)}</td>
+                <td class="celula-data">${escaparHtml(hora)}</td>
+                <td class="celula-truncar" title="${escaparHtml(petLimpo)} (${escaparHtml(ag.tutor_nome || "Tutor removido")})">${escaparHtml(petLimpo)} (${escaparHtml(ag.tutor_nome || "Tutor removido")})</td>
+                <td class="celula-truncar" title="${escaparHtml(ag.servico || "—")}">${escaparHtml(ag.servico || "—")}</td>
+                <td class="celula-truncar" title="${escaparHtml(ag.petshop_nome || ag.local || "Não vinculado")}">${(ag.petshop_nome || ag.local) ? escaparHtml(ag.petshop_nome || ag.local) : `<span class="texto-nao-vinculado">Não vinculado</span>`}</td>
                 <td>${badgeStatusAgendamento(ag.status)}</td>
                 <td>${botoesAcao(ag)}</td>
             </tr>

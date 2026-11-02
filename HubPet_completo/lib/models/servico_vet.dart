@@ -1,14 +1,11 @@
 import 'json_utils.dart';
 
-// Serviço oferecido por um veterinário específico (CRUD em
-// servicos_vet.dart) — diferente do catálogo global de agendamento
-// (veja models/servico.dart).
 class ServicoVet {
   int? id;
   int? veterinarioId;
   String nome;
   double preco;
-  String duracao; // texto livre, ex. "30 min"
+  String duracao;
 
   ServicoVet({
     this.id,
@@ -26,7 +23,6 @@ class ServicoVet {
         duracao: json['duracao'] as String? ?? '',
       );
 
-  // Usado em POST /veterinarios/{id}/servicos.
   Map<String, dynamic> toJson() => {
         'nome': nome,
         'preco': preco,

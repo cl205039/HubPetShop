@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
     login: (credenciais) => ipcRenderer.invoke("login", credenciais),
+    logout: () => ipcRenderer.invoke("logout"),
     cadastrarPetshop: (dados) => ipcRenderer.invoke("cadastrarPetshop", dados),
 
     listarPetshops: (filtros) => ipcRenderer.invoke("listarPetshops", filtros),
@@ -18,38 +19,42 @@ contextBridge.exposeInMainWorld("api", {
 
     listarPedidos: (filtros) => ipcRenderer.invoke("listarPedidos", filtros),
     obterItensPedido: (pedidoId) => ipcRenderer.invoke("obterItensPedido", pedidoId),
-    atualizarStatusPedido: (id, etapa) => ipcRenderer.invoke("atualizarStatusPedido", { id, etapa }),
+    obterEnderecoUsuario: (usuarioId) => ipcRenderer.invoke("obterEnderecoUsuario", usuarioId),
+    atualizarStatusPedido: (id, etapa, motivo) => ipcRenderer.invoke("atualizarStatusPedido", { id, etapa, motivo }),
 
     listarAgendamentos: (filtros) => ipcRenderer.invoke("listarAgendamentos", filtros),
     atualizarStatusAgendamento: (id, status) => ipcRenderer.invoke("atualizarStatusAgendamento", { id, status }),
 
     obterDashboardAdmin: () => ipcRenderer.invoke("obterDashboardAdmin"),
-    obterDashboardPetshop: (petshopId) => ipcRenderer.invoke("obterDashboardPetshop", petshopId),
+    // Canais do petshop
+    obterDashboardPetshop: () => ipcRenderer.invoke("obterDashboardPetshop"),
 
     listarCategorias: (tipo) => ipcRenderer.invoke("listarCategorias", tipo),
-    listarProdutos: (petshopId, filtros) => ipcRenderer.invoke("listarProdutos", { petshopId, filtros }),
-    cadastrarProduto: (petshopId, dados) => ipcRenderer.invoke("cadastrarProduto", { petshopId, dados }),
-    editarProduto: (id, petshopId, dados) => ipcRenderer.invoke("editarProduto", { id, petshopId, dados }),
-    ativarProduto: (id, petshopId) => ipcRenderer.invoke("ativarProduto", { id, petshopId }),
-    desativarProduto: (id, petshopId) => ipcRenderer.invoke("desativarProduto", { id, petshopId }),
-    atualizarEstoqueProduto: (id, petshopId, estoque) => ipcRenderer.invoke("atualizarEstoqueProduto", { id, petshopId, estoque }),
+    listarProdutos: (filtros) => ipcRenderer.invoke("listarProdutos", filtros),
+    cadastrarProduto: (dados) => ipcRenderer.invoke("cadastrarProduto", dados),
+    editarProduto: (id, dados) => ipcRenderer.invoke("editarProduto", { id, dados }),
+    ativarProduto: (id) => ipcRenderer.invoke("ativarProduto", id),
+    desativarProduto: (id) => ipcRenderer.invoke("desativarProduto", id),
+    atualizarEstoqueProduto: (id, estoque) => ipcRenderer.invoke("atualizarEstoqueProduto", { id, estoque }),
 
-    listarServicos: (petshopId, filtros) => ipcRenderer.invoke("listarServicos", { petshopId, filtros }),
-    cadastrarServico: (petshopId, dados) => ipcRenderer.invoke("cadastrarServico", { petshopId, dados }),
-    editarServico: (id, petshopId, dados) => ipcRenderer.invoke("editarServico", { id, petshopId, dados }),
-    ativarServico: (id, petshopId) => ipcRenderer.invoke("ativarServico", { id, petshopId }),
-    desativarServico: (id, petshopId) => ipcRenderer.invoke("desativarServico", { id, petshopId }),
+    listarServicos: (filtros) => ipcRenderer.invoke("listarServicos", filtros),
+    cadastrarServico: (dados) => ipcRenderer.invoke("cadastrarServico", dados),
+    editarServico: (id, dados) => ipcRenderer.invoke("editarServico", { id, dados }),
+    ativarServico: (id) => ipcRenderer.invoke("ativarServico", id),
+    desativarServico: (id) => ipcRenderer.invoke("desativarServico", id),
 
-    listarPedidosPetshop: (petshopId, filtros) => ipcRenderer.invoke("listarPedidosPetshop", { petshopId, filtros }),
-    obterItensPedidoPetshop: (pedidoId, petshopId) => ipcRenderer.invoke("obterItensPedidoPetshop", { pedidoId, petshopId }),
-    atualizarStatusPedidoPetshop: (id, petshopId, etapa, motivo) => ipcRenderer.invoke("atualizarStatusPedidoPetshop", { id, petshopId, etapa, motivo }),
+    listarPedidosPetshop: (filtros) => ipcRenderer.invoke("listarPedidosPetshop", filtros),
+    obterItensPedidoPetshop: (pedidoId) => ipcRenderer.invoke("obterItensPedidoPetshop", pedidoId),
+    atualizarStatusPedidoPetshop: (id, etapa, motivo) => ipcRenderer.invoke("atualizarStatusPedidoPetshop", { id, etapa, motivo }),
 
-    listarAgendamentosPetshop: (petshopId, filtros) => ipcRenderer.invoke("listarAgendamentosPetshop", { petshopId, filtros }),
-    atualizarStatusAgendamentoPetshop: (id, petshopId, status) => ipcRenderer.invoke("atualizarStatusAgendamentoPetshop", { id, petshopId, status }),
+    listarAgendamentosPetshop: (filtros) => ipcRenderer.invoke("listarAgendamentosPetshop", filtros),
+    obterAgendaDoDia: (data) => ipcRenderer.invoke("obterAgendaDoDia", data),
+    atualizarStatusAgendamentoPetshop: (id, status) => ipcRenderer.invoke("atualizarStatusAgendamentoPetshop", { id, status }),
 
-    obterPerfilPetshop: (petshopId) => ipcRenderer.invoke("obterPerfilPetshop", petshopId),
+    obterPerfilPetshop: () => ipcRenderer.invoke("obterPerfilPetshop"),
     obterEnderecoUsuarioPetshop: (usuarioId) => ipcRenderer.invoke("obterEnderecoUsuarioPetshop", usuarioId),
-    salvarPerfilPetshop: (petshopId, dados) => ipcRenderer.invoke("salvarPerfilPetshop", { petshopId, dados }),
+    salvarPerfilPetshop: (dados) => ipcRenderer.invoke("salvarPerfilPetshop", dados),
+    salvarHorariosPetshop: (horarios) => ipcRenderer.invoke("salvarHorariosPetshop", horarios),
 
     obterRelatorioVendas: (periodo) => ipcRenderer.invoke("obterRelatorioVendas", periodo),
     exportarRelatorioPDF: () => ipcRenderer.invoke("exportarRelatorioPDF")

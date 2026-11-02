@@ -31,9 +31,6 @@ class _InicioPageState extends State<InicioPage>
     _carregarPetshops();
   }
 
-  // Refaz a consulta sempre que a Home volta a ficar visível (também
-  // atualiza o cabeçalho "Olá, <nome>" porque _carregarPetshops chama
-  // setState).
   @override
   void recarregar() => _carregarPetshops();
 
@@ -47,16 +44,17 @@ class _InicioPageState extends State<InicioPage>
     if (mounted) setState(() {});
   }
 
+  //3
+
   Future<void> _carregarPetshops() async {
     setState(() {
       _carregando = true;
       _erro = null;
     });
+
     try {
       final petshops = await PetshopService.listar();
       setState(() {
-        // Mostra só os 3 primeiros aqui — a lista completa fica em
-        // ListaPetshopsPage ("Ver todos").
         _petshops = petshops.take(3).toList();
         _carregando = false;
       });
@@ -68,15 +66,12 @@ class _InicioPageState extends State<InicioPage>
     }
   }
 
-  // Primeiro nome do usuário, com fallback caso venha vazio da API.
   String _primeiroNome(String nome) {
     final limpo = nome.trim();
     if (limpo.isEmpty) return 'Usuário';
     return limpo.split(' ').first;
   }
 
-  // Abre a listagem com produtos de vários petshops, já filtrada
-  // pela categoria selecionada.
   void _abrirCategoria(BuildContext context, String categoria) {
     Navigator.push(
       context,
@@ -103,19 +98,22 @@ class _InicioPageState extends State<InicioPage>
           bottom: false,
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const Home()),
-                      ),
-                      child: const CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person, color: Color(0xFF6A0DAD)),
+                    Semantics(
+                      button: true,
+                      label: 'Minha conta',
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const Home()),
+                        ),
+                        child: const CircleAvatar(
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person, color: Color(0xFF6A0DAD)),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -145,9 +143,6 @@ class _InicioPageState extends State<InicioPage>
                         ],
                       ),
                     ),
-                    // Login não é mais obrigatório na abertura do app: aqui
-                    // o cliente entra se quiser (o login "de verdade" é
-                    // pedido no fechamento da compra — ver carrinho.dart).
                     if (usuario == null)
                       ElevatedButton.icon(
                         onPressed: _abrirLogin,
@@ -174,7 +169,6 @@ class _InicioPageState extends State<InicioPage>
                 ),
               ),
 
-              // Campo de busca
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: TextField(
@@ -211,7 +205,6 @@ class _InicioPageState extends State<InicioPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Categorias de produtos + serviços ──
                         Row(
                           children: [
                             Container(
@@ -295,7 +288,6 @@ class _InicioPageState extends State<InicioPage>
 
                         const SizedBox(height: 25),
 
-                        // ── Petshops ──
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -401,8 +393,6 @@ class _InicioPageState extends State<InicioPage>
     );
   }
 }
-
-// ── Widgets auxiliares ──
 
 class _CategoriaCard extends StatelessWidget {
   final IconData icon;

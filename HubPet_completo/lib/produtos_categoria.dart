@@ -7,13 +7,6 @@ import 'carrinho.dart';
 import 'rodape_nav.dart';
 import 'recarrega_ao_voltar.dart';
 
-// ============================================================
-// PRODUTOS POR CATEGORIA — agrega ofertas de vários petshops
-// Aberta ao tocar em uma categoria na InicioPage.
-// O mesmo produto aparece em petshops diferentes, com preços
-// diferentes, para o usuário comparar.
-// ============================================================
-
 class ProdutosCategoriaPage extends StatefulWidget {
   final String categoriaInicial;
 
@@ -35,7 +28,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
 
   static const Color _roxo = Color(0xFF6A0DAD);
 
-  // ── Categorias (chips do topo) ──
   static const List<Map<String, String>> _categorias = [
     {'id': 'todos', 'label': 'Todos'},
     {'id': 'racoes', 'label': 'Rações'},
@@ -68,9 +60,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
       _erro = null;
     });
     try {
-      // Busca tudo uma vez só; categoria e busca continuam filtradas
-      // no client (como já era antes), pra trocar de chip sem nova
-      // requisição a cada clique.
       final ofertas = await ProdutoService.ofertasPorCategoria();
       setState(() {
         _ofertas = ofertas;
@@ -81,8 +70,7 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
         _erro = e.mensagem;
         _carregando = false;
       });
-    }
-  }
+    }}
 
   List<ProdutoOferta> get _ofertasVisiveis {
     return _ofertas.where((o) {
@@ -132,7 +120,7 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
                   context,
                   MaterialPageRoute(builder: (_) => const CarrinhoPage()),
                 );
-                setState(() {}); // atualiza o contador ao voltar
+                setState(() {});
               },
               icon: const Icon(Icons.shopping_cart, color: Colors.white),
               label: Text(
@@ -153,21 +141,24 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
           bottom: false,
           child: Column(
             children: [
-              // ── Cabeçalho ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(10, 10, 15, 10),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(40),
-                          borderRadius: BorderRadius.circular(12),
+                    Semantics(
+                      button: true,
+                      label: 'Voltar',
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(40),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.arrow_back,
+                              color: Colors.white, size: 22),
                         ),
-                        child: const Icon(Icons.arrow_back,
-                            color: Colors.white, size: 22),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -195,7 +186,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
                 ),
               ),
 
-              // ── Busca ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: TextField(
@@ -207,6 +197,7 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
                     suffixIcon: _busca.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
+                            tooltip: 'Limpar busca',
                             onPressed: () {
                               _buscaCtrl.clear();
                               setState(() => _busca = '');
@@ -226,7 +217,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
 
               const SizedBox(height: 14),
 
-              // ── Chips de categoria ──
               SizedBox(
                 height: 38,
                 child: ListView.separated(
@@ -263,7 +253,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
 
               const SizedBox(height: 16),
 
-              // ── Lista de ofertas ──
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
@@ -325,7 +314,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
     );
   }
 
-  // ── Card de uma oferta (produto + petshop) ──
   Widget _cardOferta(ProdutoOferta o) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -340,7 +328,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Foto do produto (com fallback caso a imagem falte)
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.asset(
@@ -348,6 +335,7 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
               width: 80,
               height: 80,
               fit: BoxFit.cover,
+              excludeFromSemantics: true,
               errorBuilder: (_, __, ___) => CustomPaint(
                 painter: _HachuraPainter(),
                 child: const SizedBox(
@@ -382,7 +370,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 ),
                 const SizedBox(height: 6),
-                // Petshop que oferece
                 Row(
                   children: [
                     const Icon(Icons.store, size: 14, color: _roxo),
@@ -447,7 +434,6 @@ class _ProdutosCategoriaPageState extends State<ProdutosCategoriaPage>
   }
 }
 
-// Desenha a hachura diagonal do placeholder "foto do produto".
 class _HachuraPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

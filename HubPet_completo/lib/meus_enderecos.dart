@@ -7,12 +7,6 @@ import 'cadastrar_endereco.dart';
 import 'rodape_nav.dart';
 import 'recarrega_ao_voltar.dart';
 
-// ============================================================
-// MEUS ENDEREÇOS — lista os endereços salvos do usuário e permite
-// cadastrar novos via CadastrarEnderecoPage (antes um formulário
-// órfão, sem nenhuma tela que o exibisse).
-// ============================================================
-
 class MeusEnderecosPage extends StatefulWidget {
   const MeusEnderecosPage({super.key});
 
@@ -100,6 +94,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage>
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
                     ),
                     const Text(
                       "Meus Endereços",
@@ -212,6 +207,7 @@ class _MeusEnderecosPageState extends State<MeusEnderecosPage>
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
+            tooltip: 'Remover endereço',
             onPressed: () => _remover(e),
           ),
         ],

@@ -7,8 +7,6 @@ class Dados extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIX: antes essa tela era 100% hardcoded e nem lia o usuário
-    // logado — agora mostra os dados de verdade, como já fazia DadosVet.
     final u = AppData.usuarioLogado;
 
     return Scaffold(
@@ -35,6 +33,7 @@ class Dados extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
+                    tooltip: 'Voltar',
                   ),
                   const Text(
                     "Meus dados",

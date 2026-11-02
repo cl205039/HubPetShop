@@ -1,13 +1,28 @@
+const fs = require("fs");
+const path = require("path");
 const mysql = require("mysql2/promise");
 
-// Pool único de conexão com o MySQL do XAMPP (porta 3307, sem senha).
-// Mesmas credenciais usadas por API/config.php e HubPetShopWebGer/conexao.php.
-const pool = mysql.createPool({
+// Configuração do banco: config.json na raiz (modelo em config.exemplo.json) ou padrões do XAMPP.
+const CONFIG_PADRAO = {
     host: "localhost",
     port: 3307,
     user: "root",
     password: "",
-    database: "hubpetshop",
+    database: "hubpetshop"
+};
+
+function lerConfiguracao() {
+    try {
+        const caminho = path.join(__dirname, "../../../config.json");
+        return { ...CONFIG_PADRAO, ...JSON.parse(fs.readFileSync(caminho, "utf8")) };
+    } catch {
+        return CONFIG_PADRAO;
+    }
+}
+
+// Pool único de conexão com o MySQL.
+const pool = mysql.createPool({
+    ...lerConfiguracao(),
     waitForConnections: true,
     connectionLimit: 10,
 });

@@ -7,6 +7,7 @@ import 'descricao_projeto.dart';
 import 'sobre_nos.dart';
 import 'telainicio.dart';
 import 'rodape_nav.dart';
+import 'acessibilidade_tela.dart';
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -29,28 +30,32 @@ class Home extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              // Botão de voltar para o início
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const InicioPage()),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(40),
-                        borderRadius: BorderRadius.circular(12),
+                  Semantics(
+                    button: true,
+                    label: 'Voltar',
+                    child: GestureDetector(
+                      onTap: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const InicioPage()),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(40),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.arrow_back,
+                            color: Colors.white, size: 22),
                       ),
-                      child: const Icon(Icons.arrow_back,
-                          color: Colors.white, size: 22),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -67,7 +72,6 @@ class Home extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Card do usuário
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -109,20 +113,21 @@ class Home extends StatelessWidget {
                     const SizedBox(height: 15),
                     const Divider(),
 
-                    // ── Itens do menu ──
-                    // Meus dados / Meus Pedidos / Meus Agendamentos / Petshops
-                    // agora são atalhos por ícone no rodapé (bottomNavigationBar).
                     _item(context, Icons.pets, 'Meu pet', const MeusPets()),
                     _item(context, Icons.location_on, 'Meus Endereços',
                         const MeusEnderecosPage()),
 
                     const Divider(),
 
-                    // ── Páginas do projeto integrador ──
                     _item(context, Icons.info_outline, 'Sobre o Projeto',
                         const DescricaoProjetoPage()),
                     _item(context, Icons.people_outline, 'Sobre Nós',
                         const SobreNosPage()),
+
+                    const Divider(),
+
+                    _item(context, Icons.accessibility_new, 'Acessibilidade',
+                        const AcessibilidadePage()),
 
                     const Divider(),
 

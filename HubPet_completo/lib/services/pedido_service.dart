@@ -15,8 +15,6 @@ class PedidoService {
 
   static Future<Pedido> criar(int usuarioId, Pedido pedido) async {
     final corpo = pedido.toJson();
-    // Deixa visível no console exatamente o que vai pro backend —
-    // confira o `petshopId` aqui se o pedido estiver saindo sem/errado.
     debugPrint(
         '[PedidoService] POST usuarios/$usuarioId/pedidos  corpo=$corpo');
     final json = await ApiClient.post('usuarios/$usuarioId/pedidos', corpo);

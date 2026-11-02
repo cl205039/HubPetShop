@@ -4,17 +4,6 @@ import 'agendamentos.dart';
 import 'endereco.dart';
 import 'dados.dart';
 
-// ============================================================
-// RODAPÉ DE NAVEGAÇÃO — barra de atalhos por ícone usada em todas
-// as telas de navegação do dono de pet. Não tem "aba selecionada":
-// é só um atalho rápido. Cada tela adiciona no seu Scaffold:
-//
-//   bottomNavigationBar: const RodapeNav(),
-//
-// e, se o corpo usa SafeArea, passa `bottom: false` nela para não
-// duplicar o respiro inferior.
-// ============================================================
-
 class RodapeNav extends StatelessWidget {
   const RodapeNav({super.key});
 

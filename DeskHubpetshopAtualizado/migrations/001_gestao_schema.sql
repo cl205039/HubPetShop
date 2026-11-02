@@ -1,7 +1,4 @@
--- Migração aditiva para o painel de gestão (admin + parceiro) do desktop HubPet.
--- Só ADD COLUMN / CREATE TABLE / MODIFY COLUMN (adicionando um valor ao enum
--- existente) — nenhum DROP, nenhuma coluna existente é removida ou renomeada.
--- Não afeta o contrato da API PHP usada pelo app Flutter do consumidor.
+-- Migração 001: colunas e tabelas do painel de gestão (somente aditiva).
 
 USE hubpetshop;
 

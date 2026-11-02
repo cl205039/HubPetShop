@@ -1,4 +1,4 @@
-// Aviso customizado anti-congelamento (toast de sucesso/erro em pt-BR).
+// Aviso (toast) de sucesso/erro.
 export function mostrarNotificacao(mensagem, sucesso = true) {
     const antiga = document.getElementById("toast-notificacao");
     if (antiga) antiga.remove();

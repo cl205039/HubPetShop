@@ -2,6 +2,7 @@
 
 class Pets
 {
+    // Formata a linha do banco para a resposta.
     private static function transformar(array $linha): array
     {
         return [
@@ -17,6 +18,7 @@ class Pets
         ];
     }
 
+    // Lista os pets do usuário.
     public static function listar(int $usuarioId): void
     {
         $stmt = Database::get()->prepare('SELECT * FROM pets WHERE usuario_id = ? ORDER BY id');
@@ -24,6 +26,7 @@ class Pets
         Response::json(array_map([self::class, 'transformar'], $stmt->fetchAll()), 200);
     }
 
+    // Cadastra um pet para o usuário.
     public static function criar(int $usuarioId, array $corpo): void
     {
         if (!Usuarios::existe($usuarioId)) {
@@ -54,6 +57,7 @@ class Pets
         Response::json(self::transformar($stmt->fetch()), 201);
     }
 
+    // Atualiza só os campos enviados do pet.
     public static function atualizar(int $id, array $corpo): void
     {
         $pdo = Database::get();
@@ -83,6 +87,7 @@ class Pets
         Response::json(self::transformar($stmt->fetch()), 200);
     }
 
+    // Remove um pet.
     public static function remover(int $id): void
     {
         $pdo = Database::get();
