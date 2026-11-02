@@ -2,6 +2,7 @@
 
 class Servicos
 {
+    // Lista o catálogo de serviços.
     public static function listar(): void
     {
         $stmt = Database::get()->query('SELECT * FROM servicos ORDER BY id');

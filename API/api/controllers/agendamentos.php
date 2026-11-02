@@ -4,17 +4,11 @@ class Agendamentos
 {
     private const STATUS_VALIDOS = ['Confirmado', 'Pendente', 'Concluído'];
 
-    // ------------------------------------------------------------------
-    // Conferência de horário: MESMA regra da agenda do desktop
-    // (DeskHubpetshopAtualizado/src/main/db/petshop.js): horário padrão
-    // quando o petshop não cadastrou o dia, duração dos serviços somada e
-    // nenhuma sobreposição com agendamentos não cancelados.
-    // ------------------------------------------------------------------
+    // Regras de horário iguais às da agenda do desktop.
     private const DURACAO_PADRAO_MIN = 30;
     private const FUSO = 'America/Sao_Paulo';
 
-    // Sem cadastro em horarios_funcionamento: segunda a sábado, 08:00 às
-    // 18:00, domingo fechado (dia_semana 0 = domingo).
+    // Horário padrão: seg a sáb, 08:00 às 18:00; domingo fechado.
     private static function horarioPadrao(int $diaSemana): array
     {
         $fechado = $diaSemana === 0;
@@ -25,7 +19,7 @@ class Agendamentos
         ];
     }
 
-    // "30min" -> 30, "1h" -> 60, "1h30" -> 90, "90 min" -> 90. null se não entender.
+    // Converte texto de duração em minutos ("1h30" -> 90).
     private static function duracaoEmMinutos(?string $texto): ?int
     {
         $t = strtolower(preg_replace('/\s+/', '', (string)$texto));
@@ -38,8 +32,7 @@ class Agendamentos
         return null;
     }
 
-    // Cada serviço do texto ("Banho e Tosa, Vacina") é procurado pelo nome nos
-    // serviços do petshop; as durações são somadas. Não encontrado = 30 min.
+    // Soma a duração dos serviços do agendamento (30 min se não encontrar).
     private static function duracaoDoAgendamento(?string $servico, array $servicosDoPetshop): int
     {
         $nomes = array_filter(
@@ -64,8 +57,7 @@ class Agendamentos
         return $total;
     }
 
-    // Início em minutos desde a meia-noite: campo hora ("09:00") ou, se faltar,
-    // a hora que vem junto do texto data ("2026-09-03 09:30:00").
+    // Hora de início em minutos desde a meia-noite (usa hora ou data).
     private static function inicioEmMinutos(?string $hora, ?string $data): ?int
     {
         $texto = $hora ?: (preg_split('/[T ]/', (string)$data)[1] ?? '');
@@ -75,14 +67,14 @@ class Agendamentos
         return null;
     }
 
+    // Converte "HH:MM" em minutos.
     private static function minutos(string $hora): int
     {
         [$h, $m] = array_map('intval', explode(':', $hora));
         return $h * 60 + $m;
     }
 
-    // Devolve null se o horário pode ser agendado, ou [status, codigo, mensagem]
-    // para Response::erro.
+    // Valida o horário: null se livre, ou [status, codigo, mensagem] do erro.
     private static function validarHorario(PDO $pdo, int $petshopId, array $corpo): ?array
     {
         $fuso = new DateTimeZone(self::FUSO);
@@ -132,8 +124,7 @@ class Agendamentos
             )];
         }
 
-        // Agendamentos do mesmo petshop no mesmo dia que não foram cancelados
-        // (mesmo filtro de data da agenda do desktop).
+        // Verifica conflito com outros agendamentos do dia.
         $stmt = $pdo->prepare(
             "SELECT hora, data, servico FROM agendamentos
              WHERE petshop_id = ? AND status <> 'Cancelado'
@@ -155,6 +146,7 @@ class Agendamentos
         return null;
     }
 
+    // Formata a linha do banco para a resposta.
     private static function transformar(array $linha): array
     {
         return [
@@ -170,6 +162,7 @@ class Agendamentos
         ];
     }
 
+    // Lista os agendamentos do usuário.
     public static function listar(int $usuarioId): void
     {
         $stmt = Database::get()->prepare('SELECT * FROM agendamentos WHERE usuario_id = ? ORDER BY id');
@@ -177,6 +170,7 @@ class Agendamentos
         Response::json(array_map([self::class, 'transformar'], $stmt->fetchAll()), 200);
     }
 
+    // Cria um agendamento, validando o horário quando há petshopId.
     public static function criar(int $usuarioId, array $corpo): void
     {
         if (!Usuarios::existe($usuarioId)) {
@@ -191,9 +185,7 @@ class Agendamentos
         $pdo = Database::get();
         $petshopId = isset($corpo['petshopId']) ? (int)$corpo['petshopId'] : null;
 
-        // Com petshopId, o horário é conferido antes de gravar. A transação e
-        // o FOR UPDATE na linha do petshop fazem dois agendamentos enviados ao
-        // mesmo tempo serem conferidos um de cada vez.
+        // Transação + FOR UPDATE evitam dois agendamentos simultâneos no mesmo horário.
         $pdo->beginTransaction();
         try {
             if ($petshopId !== null) {

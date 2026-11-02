@@ -2,6 +2,7 @@
 
 class Petshops
 {
+    // Formata a linha do banco para a resposta.
     private static function transformar(array $linha): array
     {
         return [
@@ -12,12 +13,14 @@ class Petshops
         ];
     }
 
+    // Lista todos os petshops.
     public static function listar(): void
     {
         $stmt = Database::get()->query('SELECT * FROM petshops ORDER BY id');
         Response::json(array_map([self::class, 'transformar'], $stmt->fetchAll()), 200);
     }
 
+    // Retorna um petshop pelo id.
     public static function buscarPorId(int $id): void
     {
         $stmt = Database::get()->prepare('SELECT * FROM petshops WHERE id = ?');

@@ -10,6 +10,7 @@ class Usuarios
         'veterinario'    => 'Veterinário',
     ];
 
+    // Verifica se o usuário existe.
     public static function existe(int $id): bool
     {
         $stmt = Database::get()->prepare('SELECT 1 FROM usuarios WHERE id = ?');
@@ -17,6 +18,7 @@ class Usuarios
         return (bool)$stmt->fetchColumn();
     }
 
+    // Formata a linha do banco para a resposta (sem a senha).
     private static function transformar(array $linha): array
     {
         return [
@@ -33,6 +35,7 @@ class Usuarios
         ];
     }
 
+    // Cadastra um novo usuário.
     public static function cadastrar(array $corpo): void
     {
         foreach (['nome', 'cpf', 'email', 'telefone', 'senha', 'tipoUsuario'] as $campo) {
@@ -76,6 +79,7 @@ class Usuarios
         Response::json(self::transformar($stmt->fetch()), 201);
     }
 
+    // Autentica por e-mail e senha.
     public static function login(array $corpo): void
     {
         if (empty($corpo['email']) || empty($corpo['senha'])) {
@@ -93,6 +97,7 @@ class Usuarios
         Response::json(self::transformar($usuario), 200);
     }
 
+    // Troca a senha do usuário pelo e-mail.
     public static function redefinirSenha(array $corpo): void
     {
         if (empty($corpo['email']) || empty($corpo['novaSenha'])) {
@@ -114,6 +119,7 @@ class Usuarios
         Response::json(new stdClass(), 200);
     }
 
+    // Retorna um usuário pelo id.
     public static function buscarPorId(int $id): void
     {
         $stmt = Database::get()->prepare('SELECT * FROM usuarios WHERE id = ?');
@@ -127,6 +133,7 @@ class Usuarios
         Response::json(self::transformar($usuario), 200);
     }
 
+    // Lista usuários, com filtro opcional (nome, email, telefone, cpf ou tipo).
     public static function buscar(array $query): void
     {
         $stmt = Database::get()->query('SELECT * FROM usuarios ORDER BY id');

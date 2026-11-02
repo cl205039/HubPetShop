@@ -2,6 +2,7 @@
 
 class Pedidos
 {
+    // Formata um item do pedido para a resposta.
     private static function transformarItem(array $linha): array
     {
         return [
@@ -12,6 +13,7 @@ class Pedidos
         ];
     }
 
+    // Formata o pedido com seus itens para a resposta.
     private static function transformar(PDO $pdo, array $pedido): array
     {
         $itensStmt = $pdo->prepare('SELECT * FROM pedido_itens WHERE pedido_id = ? ORDER BY id');
@@ -29,6 +31,7 @@ class Pedidos
         ];
     }
 
+    // Lista os pedidos do usuário.
     public static function listar(int $usuarioId): void
     {
         $pdo = Database::get();
@@ -39,6 +42,7 @@ class Pedidos
         Response::json($resultado, 200);
     }
 
+    // Cria um pedido com seus itens e atualiza o estoque.
     public static function criar(int $usuarioId, array $corpo): void
     {
         if (!Usuarios::existe($usuarioId)) {
@@ -55,10 +59,7 @@ class Pedidos
 
         $pdo = Database::get();
 
-        // Alguns clientes mandam petshopId mas esquecem `loja` (texto livre
-        // com o nome da loja). Como petshopId já é a fonte de verdade, a API
-        // preenche `loja` sozinha a partir do nome do petshop nesse caso —
-        // não depende de cada cliente (web, Flutter, futuros) mandar os dois.
+        // Sem `loja`, usa o nome do petshop.
         $loja = $corpo['loja'] ?? null;
         if (empty($loja) && $petshopId !== null) {
             $petshopStmt = $pdo->prepare('SELECT nome FROM petshops WHERE id = ?');
@@ -87,15 +88,11 @@ class Pedidos
             $itemStmt = $pdo->prepare(
                 'INSERT INTO pedido_itens (pedido_id, nome, quantidade, preco_unitario, produto_id) VALUES (?, ?, ?, ?, ?)'
             );
-            // Só abate estoque de itens que vieram com produtoId (o carrinho
-            // monta isso a partir do produtoId já presente em cada oferta —
-            // ver Produtos::ofertas/ofertasPorPetshop). Sem produtoId não dá
-            // pra saber qual linha de `produtos` corresponde ao item.
+            // Abate o estoque dos itens com produtoId.
             $estoqueStmt = $pdo->prepare(
                 'UPDATE produtos SET estoque = GREATEST(estoque - ?, 0) WHERE id = ?'
             );
-            // O app nem sempre manda produtoId. Nesse caso o produto é
-            // encontrado pelo nome do item dentro do petshop do pedido.
+            // Sem produtoId, procura o produto pelo nome no petshop.
             $produtoPorNomeStmt = $pdo->prepare(
                 'SELECT id FROM produtos WHERE nome = ? AND petshop_id = ? AND ativo = 1 LIMIT 1'
             );

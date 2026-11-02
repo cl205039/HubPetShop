@@ -2,6 +2,7 @@
 
 class Produtos
 {
+    // Lista as ofertas de um petshop.
     public static function ofertasPorPetshop(int $petshopId): void
     {
         $sql = 'SELECT o.id AS oferta_id, p.id AS produto_id, p.nome, p.descricao, p.categoria, p.imagem, o.preco
@@ -27,6 +28,7 @@ class Produtos
         Response::json($ofertas, 200);
     }
 
+    // Lista todas as ofertas, com filtro opcional por categoria.
     public static function ofertas(?string $categoria): void
     {
         $sql = 'SELECT o.id AS oferta_id, p.id AS produto_id, p.nome, p.descricao, p.categoria, p.imagem, o.preco,

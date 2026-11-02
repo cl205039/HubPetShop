@@ -4,6 +4,7 @@ class Database
 {
     private static ?PDO $instance = null;
 
+    // Retorna a conexão PDO (criada uma única vez).
     public static function get(): PDO
     {
         if (self::$instance === null) {
