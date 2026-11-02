@@ -94,9 +94,22 @@ class Pedidos
             $estoqueStmt = $pdo->prepare(
                 'UPDATE produtos SET estoque = GREATEST(estoque - ?, 0) WHERE id = ?'
             );
+            // O app nem sempre manda produtoId. Nesse caso o produto é
+            // encontrado pelo nome do item dentro do petshop do pedido.
+            $produtoPorNomeStmt = $pdo->prepare(
+                'SELECT id FROM produtos WHERE nome = ? AND petshop_id = ? AND ativo = 1 LIMIT 1'
+            );
             foreach ($itens as $item) {
                 $quantidade = (int)($item['quantidade'] ?? 1);
                 $produtoId = isset($item['produtoId']) ? (int)$item['produtoId'] : null;
+
+                if ($produtoId === null && $petshopId !== null) {
+                    $produtoPorNomeStmt->execute([$item['nome'] ?? '', $petshopId]);
+                    $encontrado = $produtoPorNomeStmt->fetchColumn();
+                    if ($encontrado !== false) {
+                        $produtoId = (int)$encontrado;
+                    }
+                }
 
                 $itemStmt->execute([
                     $pedidoId,

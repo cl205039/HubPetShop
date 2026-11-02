@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'json_utils.dart';
 
-// Serviço do catálogo global de agendamento (banho, tosa, consulta...),
-// usado em agendar.dart. `icone` chega da API como string (ex.
-// "bathtub") e é convertida pra IconData aqui, já que IconData não é
-// serializável em JSON.
 class Servico {
   final int id;
   final String nome;

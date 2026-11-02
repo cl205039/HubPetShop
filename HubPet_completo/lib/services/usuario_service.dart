@@ -9,8 +9,6 @@ class UsuarioService {
     return Usuario.fromJson(json as Map<String, dynamic>);
   }
 
-  /// Retorna o usuário logado, ou `null` se e-mail/senha não confere
-  /// (a API responde 401 nesse caso).
   static Future<Usuario?> login(String email, String senha) async {
     try {
       final json = await ApiClient.post('usuarios/login', {
@@ -36,8 +34,6 @@ class UsuarioService {
     return Usuario.fromJson(json as Map<String, dynamic>);
   }
 
-  /// Busca por um único atributo por vez, espelhando busca_usuarios.dart.
-  /// `atributo` é um de: nome, email, telefone, cpf, tipo.
   static Future<List<Usuario>> buscar({
     required String atributo,
     required String termo,
@@ -48,7 +44,6 @@ class UsuarioService {
         .toList();
   }
 
-  /// Total de usuários cadastrados (mostrado no topo de BuscaUsuariosPage).
   static Future<int> total() async {
     final json = await ApiClient.get('usuarios');
     return (json as List).length;

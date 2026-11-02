@@ -4,14 +4,8 @@ import 'api_client.dart';
 import 'services/pedido_service.dart';
 import 'rodape_nav.dart';
 import 'recarrega_ao_voltar.dart';
-
-// ============================================================
-// PEDIDOS — acompanhamento de pedidos estilo iFood
-// Abas: "Em andamento" e "Concluídos".
-// Status: Confirmado pela clínica → Em preparação →
-//         Saiu para entrega → Entregue.
-// Os pedidos vêm da API via PedidoService.
-// ============================================================
+import 'comprovante.dart';
+import 'avaliar_petshop.dart';
 
 class PedidosPage extends StatefulWidget {
   const PedidosPage({super.key});
@@ -24,7 +18,6 @@ class _PedidosPageState extends State<PedidosPage>
     with RouteAware, RecarregaAoVoltar {
   static const Color _roxo = Color(0xFF6A0DAD);
 
-  // Etapas do pedido (timeline).
   static const List<String> _etapas = [
     'Confirmado pela clínica',
     'Em preparação',
@@ -110,7 +103,6 @@ class _PedidosPageState extends State<PedidosPage>
             bottom: false,
             child: Column(
               children: [
-                // Topo
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Row(
@@ -118,6 +110,7 @@ class _PedidosPageState extends State<PedidosPage>
                       IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
                         onPressed: () => Navigator.pop(context),
+                        tooltip: 'Voltar',
                       ),
                       const Text(
                         'Meus Pedidos',
@@ -131,7 +124,6 @@ class _PedidosPageState extends State<PedidosPage>
                   ),
                 ),
 
-                // Abas
                 const TabBar(
                   indicatorColor: Colors.orange,
                   indicatorWeight: 3,
@@ -221,7 +213,6 @@ class _PedidosPageState extends State<PedidosPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabeçalho: loja + status
           Row(
             children: [
               CircleAvatar(
@@ -260,7 +251,6 @@ class _PedidosPageState extends State<PedidosPage>
 
           const Divider(height: 24),
 
-          // Itens
           ...p.itens.map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
@@ -279,12 +269,10 @@ class _PedidosPageState extends State<PedidosPage>
 
           const SizedBox(height: 12),
 
-          // Timeline (só para pedidos em andamento)
           if (!p.concluido) _timeline(p.etapa, cor),
 
           const SizedBox(height: 12),
 
-          // Rodapé: total + ação
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -301,6 +289,33 @@ class _PedidosPageState extends State<PedidosPage>
                   ),
                 ],
               ),
+              Row(
+                children: [
+                  if (p.concluido && p.petshopId != null)
+                    TextButton.icon(
+                      onPressed: () => mostrarDialogoAvaliacao(
+                        context,
+                        petshopId: p.petshopId!,
+                        nomePetshop: p.loja,
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      icon: const Icon(Icons.star_border, size: 16),
+                      label: const Text('Avaliar',
+                          style: TextStyle(fontSize: 12)),
+                    ),
+                  TextButton.icon(
+                    onPressed: () => _verComprovante(p),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    icon: const Icon(Icons.receipt_long, size: 16),
+                    label:
+                        const Text('Comprovante', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
             ],
           ),
         ],
@@ -308,7 +323,25 @@ class _PedidosPageState extends State<PedidosPage>
     );
   }
 
-  // Linha do tempo horizontal com 4 etapas.
+  void _verComprovante(Pedido p) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ComprovantePage(
+          titulo: 'Comprovante do Pedido',
+          local: p.loja,
+          data: p.data,
+          linhas: p.itens
+              .map((i) =>
+                  '${i.quantidade}x ${i.nome} — ${_formatarPreco(i.subtotal)}')
+              .toList(),
+          total: p.total,
+          codigo: p.id?.toString(),
+        ),
+      ),
+    );
+  }
+
   Widget _timeline(int etapa, Color cor) {
     return Container(
       padding: const EdgeInsets.all(12),

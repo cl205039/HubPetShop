@@ -20,13 +20,12 @@ function criarJanela() {
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
-            nodeIntegration: false
+            nodeIntegration: false,
+            sandbox: true
         }
     });
 
-    // Minimizar pro tray em vez de fechar de verdade — só sai mesmo quando
-    // o usuário escolhe "Sair" (menu nativo, tray ou Alt+F4 tratado pelo
-    // before-quit abaixo).
+    // Fechar a janela minimiza para a bandeja.
     janela.on("close", (evento) => {
         if (!app.isQuitting) {
             evento.preventDefault();
@@ -61,8 +60,7 @@ function mostrarJanelaPrincipal() {
     janelaPrincipal.focus();
 }
 
-// Confere periodicamente se há petshop pendente e reflete isso só no
-// tooltip do tray (sem badge visual sobre o ícone).
+// Verifica petshops pendentes e atualiza o tooltip da bandeja.
 async function atualizarBadgePetshopsPendentes() {
     if (!tray) return;
 
@@ -100,7 +98,7 @@ function criarMenuNativo() {
             label: "Ver",
             submenu: [
                 { role: "reload", label: "Recarregar" },
-                { role: "toggledevtools", label: "Ferramentas do desenvolvedor" },
+                ...(app.isPackaged ? [] : [{ role: "toggledevtools", label: "Ferramentas do desenvolvedor" }]),
                 { type: "separator" },
                 { role: "resetzoom", label: "Zoom padrão" },
                 { role: "zoomin", label: "Aumentar zoom" },
@@ -129,9 +127,23 @@ function criarMenuNativo() {
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-function handlerConsulta(canal, fn, valorPadrao) {
+// Sessão do usuário logado (preenchida no login, limpa no logout).
+let sessao = null;
+
+const ADMIN = ["admin"];
+const PETSHOP = ["petshop"];
+const ADMIN_OU_PETSHOP = ["admin", "petshop"];
+
+function exigirPerfil(perfis) {
+    if (!sessao || !perfis.includes(sessao.tipo)) {
+        throw new Error("Acesso negado.");
+    }
+}
+
+function handlerConsulta(canal, fn, valorPadrao, perfis) {
     ipcMain.handle(canal, async (_event, ...args) => {
         try {
+            exigirPerfil(perfis);
             return await fn(...args);
         } catch (erro) {
             console.error(`Erro em ${canal}:`, erro);
@@ -140,249 +152,96 @@ function handlerConsulta(canal, fn, valorPadrao) {
     });
 }
 
-function handlerMutacao(canal, fn, mensagemErro) {
+function handlerMutacao(canal, fn, mensagemErro, perfis) {
     ipcMain.handle(canal, async (_event, ...args) => {
         try {
+            exigirPerfil(perfis);
             await fn(...args);
             return { sucesso: true };
         } catch (erro) {
             console.error(`Erro em ${canal}:`, erro);
-            return { sucesso: false, mensagem: mensagemErro };
+            return { sucesso: false, mensagem: erro.mensagemParaUsuario || mensagemErro };
         }
     });
 }
 
 function registrarHandlersAdmin() {
-    handlerConsulta("listarPetshops", admin.listarPetshops, []);
-    handlerConsulta("obterPetshopDetalhes", admin.obterPetshopDetalhes, null);
-    handlerMutacao("aprovarPetshop", admin.aprovarPetshop, "Erro ao aprovar petshop.");
-    handlerMutacao("bloquearPetshop", admin.bloquearPetshop, "Erro ao bloquear petshop.");
-    handlerMutacao("desbloquearPetshop", admin.desbloquearPetshop, "Erro ao desbloquear petshop.");
+    handlerConsulta("listarPetshops", admin.listarPetshops, [], ADMIN);
+    handlerConsulta("obterPetshopDetalhes", admin.obterPetshopDetalhes, null, ADMIN);
+    handlerMutacao("aprovarPetshop", admin.aprovarPetshop, "Erro ao aprovar petshop.", ADMIN);
+    handlerMutacao("bloquearPetshop", admin.bloquearPetshop, "Erro ao bloquear petshop.", ADMIN);
+    handlerMutacao("desbloquearPetshop", admin.desbloquearPetshop, "Erro ao desbloquear petshop.", ADMIN);
+    handlerMutacao("salvarPetshop", ({ id, dados }) => admin.salvarPetshop(id, dados), "Erro ao salvar alterações do petshop.", ADMIN);
 
-    ipcMain.handle("salvarPetshop", async (_event, { id, dados }) => {
-        try {
-            await admin.salvarPetshop(id, dados);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro ao salvar petshop:", erro);
-            return { sucesso: false, mensagem: "Erro ao salvar alterações do petshop." };
-        }
-    });
+    handlerConsulta("listarUsuarios", admin.listarUsuarios, [], ADMIN);
+    handlerConsulta("obterPetsUsuario", admin.obterPetsUsuario, [], ADMIN);
+    handlerMutacao("ativarUsuario", admin.ativarUsuario, "Erro ao ativar usuário.", ADMIN);
+    handlerMutacao("desativarUsuario", admin.desativarUsuario, "Erro ao desativar usuário.", ADMIN);
 
-    handlerConsulta("listarUsuarios", admin.listarUsuarios, []);
-    handlerConsulta("obterPetsUsuario", admin.obterPetsUsuario, []);
-    handlerMutacao("ativarUsuario", admin.ativarUsuario, "Erro ao ativar usuário.");
-    handlerMutacao("desativarUsuario", admin.desativarUsuario, "Erro ao desativar usuário.");
+    handlerConsulta("listarPedidos", admin.listarPedidos, [], ADMIN);
+    handlerConsulta("obterItensPedido", admin.obterItensPedido, [], ADMIN);
+    handlerConsulta("obterEnderecoUsuario", petshop.obterEnderecoPrincipalUsuario, null, ADMIN);
+    handlerMutacao("atualizarStatusPedido", ({ id, etapa, motivo }) => admin.atualizarStatusPedido(id, etapa, motivo),
+        "Erro ao atualizar status do pedido.", ADMIN);
 
-    handlerConsulta("listarPedidos", admin.listarPedidos, []);
-    handlerConsulta("obterItensPedido", admin.obterItensPedido, []);
-    ipcMain.handle("atualizarStatusPedido", async (_event, { id, etapa }) => {
-        try {
-            await admin.atualizarStatusPedido(id, etapa);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro ao atualizar status do pedido:", erro);
-            return { sucesso: false, mensagem: "Erro ao atualizar status do pedido." };
-        }
-    });
+    handlerConsulta("listarAgendamentos", admin.listarAgendamentos, [], ADMIN);
+    handlerMutacao("atualizarStatusAgendamento", ({ id, status }) => admin.atualizarStatusAgendamento(id, status),
+        "Erro ao atualizar status do agendamento.", ADMIN);
 
-    handlerConsulta("listarAgendamentos", admin.listarAgendamentos, []);
-    ipcMain.handle("atualizarStatusAgendamento", async (_event, { id, status }) => {
-        try {
-            await admin.atualizarStatusAgendamento(id, status);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro ao atualizar status do agendamento:", erro);
-            return { sucesso: false, mensagem: "Erro ao atualizar status do agendamento." };
-        }
-    });
-
-    handlerConsulta("obterDashboardAdmin", admin.obterDashboardAdmin, null);
-    handlerConsulta("obterDashboardPetshop", petshop.obterDashboardPetshop, null);
+    handlerConsulta("obterDashboardAdmin", admin.obterDashboardAdmin, null, ADMIN);
 
     registrarHandlersPetshop();
 }
 
+// Canais do petshop: sempre usam o id da sessão.
 function registrarHandlersPetshop() {
-    handlerConsulta("listarCategorias", petshop.listarCategorias, []);
+    handlerConsulta("obterDashboardPetshop", () => petshop.obterDashboardPetshop(sessao.id), null, PETSHOP);
+    handlerConsulta("listarCategorias", petshop.listarCategorias, [], PETSHOP);
 
-    ipcMain.handle("listarProdutos", async (_event, { petshopId, filtros }) => {
-        try {
-            return await petshop.listarProdutos(petshopId, filtros);
-        } catch (erro) {
-            console.error("Erro em listarProdutos:", erro);
-            return [];
-        }
-    });
+    handlerConsulta("listarProdutos", (filtros) => petshop.listarProdutos(sessao.id, filtros), [], PETSHOP);
+    handlerMutacao("cadastrarProduto", (dados) => petshop.cadastrarProduto(sessao.id, dados), "Erro ao cadastrar produto.", PETSHOP);
+    handlerMutacao("editarProduto", ({ id, dados }) => petshop.editarProduto(id, sessao.id, dados), "Erro ao editar produto.", PETSHOP);
+    handlerMutacao("ativarProduto", (id) => petshop.ativarProduto(id, sessao.id), "Erro ao ativar produto.", PETSHOP);
+    handlerMutacao("desativarProduto", (id) => petshop.desativarProduto(id, sessao.id), "Erro ao desativar produto.", PETSHOP);
+    handlerMutacao("atualizarEstoqueProduto", ({ id, estoque }) => petshop.atualizarEstoqueProduto(id, sessao.id, estoque),
+        "Erro ao atualizar estoque.", PETSHOP);
 
-    ipcMain.handle("cadastrarProduto", async (_event, { petshopId, dados }) => {
-        try {
-            await petshop.cadastrarProduto(petshopId, dados);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em cadastrarProduto:", erro);
-            return { sucesso: false, mensagem: "Erro ao cadastrar produto." };
-        }
-    });
+    handlerConsulta("listarServicos", (filtros) => petshop.listarServicos(sessao.id, filtros), [], PETSHOP);
+    handlerMutacao("cadastrarServico", (dados) => petshop.cadastrarServico(sessao.id, dados), "Erro ao cadastrar serviço.", PETSHOP);
+    handlerMutacao("editarServico", ({ id, dados }) => petshop.editarServico(id, sessao.id, dados), "Erro ao editar serviço.", PETSHOP);
+    handlerMutacao("ativarServico", (id) => petshop.ativarServico(id, sessao.id), "Erro ao ativar serviço.", PETSHOP);
+    handlerMutacao("desativarServico", (id) => petshop.desativarServico(id, sessao.id), "Erro ao desativar serviço.", PETSHOP);
 
-    ipcMain.handle("editarProduto", async (_event, { id, petshopId, dados }) => {
-        try {
-            await petshop.editarProduto(id, petshopId, dados);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em editarProduto:", erro);
-            return { sucesso: false, mensagem: "Erro ao editar produto." };
-        }
-    });
+    handlerConsulta("listarPedidosPetshop", (filtros) => petshop.listarPedidos(sessao.id, filtros), [], PETSHOP);
+    handlerConsulta("obterItensPedidoPetshop", (pedidoId) => petshop.obterItensPedido(pedidoId, sessao.id), [], PETSHOP);
+    handlerMutacao("atualizarStatusPedidoPetshop", ({ id, etapa, motivo }) => petshop.atualizarStatusPedido(id, sessao.id, etapa, motivo),
+        "Erro ao atualizar status do pedido.", PETSHOP);
 
-    ipcMain.handle("ativarProduto", async (_event, { id, petshopId }) => {
-        try {
-            await petshop.ativarProduto(id, petshopId);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em ativarProduto:", erro);
-            return { sucesso: false, mensagem: "Erro ao ativar produto." };
-        }
-    });
+    handlerConsulta("listarAgendamentosPetshop", (filtros) => petshop.listarAgendamentos(sessao.id, filtros), [], PETSHOP);
+    handlerConsulta("obterAgendaDoDia", (data) => petshop.obterAgendaDoDia(sessao.id, data), null, PETSHOP);
+    handlerMutacao("atualizarStatusAgendamentoPetshop", ({ id, status }) => petshop.atualizarStatusAgendamento(id, sessao.id, status),
+        "Erro ao atualizar status do agendamento.", PETSHOP);
 
-    ipcMain.handle("desativarProduto", async (_event, { id, petshopId }) => {
-        try {
-            await petshop.desativarProduto(id, petshopId);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em desativarProduto:", erro);
-            return { sucesso: false, mensagem: "Erro ao desativar produto." };
-        }
-    });
+    handlerConsulta("obterPerfilPetshop", () => petshop.obterPerfil(sessao.id), null, PETSHOP);
+    handlerMutacao("salvarPerfilPetshop", (dados) => petshop.salvarPerfil(sessao.id, dados), "Erro ao salvar perfil.", PETSHOP);
+    handlerMutacao("salvarHorariosPetshop", (horarios) => petshop.salvarHorariosFuncionamento(sessao.id, horarios),
+        "Erro ao salvar horários.", PETSHOP);
 
-    ipcMain.handle("atualizarEstoqueProduto", async (_event, { id, petshopId, estoque }) => {
-        try {
-            await petshop.atualizarEstoqueProduto(id, petshopId, estoque);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em atualizarEstoqueProduto:", erro);
-            return { sucesso: false, mensagem: "Erro ao atualizar estoque." };
-        }
-    });
-
-    ipcMain.handle("listarServicos", async (_event, { petshopId, filtros }) => {
-        try {
-            return await petshop.listarServicos(petshopId, filtros);
-        } catch (erro) {
-            console.error("Erro em listarServicos:", erro);
-            return [];
-        }
-    });
-
-    ipcMain.handle("cadastrarServico", async (_event, { petshopId, dados }) => {
-        try {
-            await petshop.cadastrarServico(petshopId, dados);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em cadastrarServico:", erro);
-            return { sucesso: false, mensagem: "Erro ao cadastrar serviço." };
-        }
-    });
-
-    ipcMain.handle("editarServico", async (_event, { id, petshopId, dados }) => {
-        try {
-            await petshop.editarServico(id, petshopId, dados);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em editarServico:", erro);
-            return { sucesso: false, mensagem: "Erro ao editar serviço." };
-        }
-    });
-
-    ipcMain.handle("ativarServico", async (_event, { id, petshopId }) => {
-        try {
-            await petshop.ativarServico(id, petshopId);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em ativarServico:", erro);
-            return { sucesso: false, mensagem: "Erro ao ativar serviço." };
-        }
-    });
-
-    ipcMain.handle("desativarServico", async (_event, { id, petshopId }) => {
-        try {
-            await petshop.desativarServico(id, petshopId);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em desativarServico:", erro);
-            return { sucesso: false, mensagem: "Erro ao desativar serviço." };
-        }
-    });
-
-    // Canais com sufixo "Petshop" para não colidir com os handlers de
-    // mesmo nome já registrados em registrarHandlersAdmin (o admin vê todos
-    // os pedidos/agendamentos, o petshop só os próprios).
-    ipcMain.handle("listarPedidosPetshop", async (_event, { petshopId, filtros }) => {
-        try {
-            return await petshop.listarPedidos(petshopId, filtros);
-        } catch (erro) {
-            console.error("Erro em listarPedidosPetshop:", erro);
-            return [];
-        }
-    });
-
-    ipcMain.handle("obterItensPedidoPetshop", async (_event, { pedidoId, petshopId }) => {
-        try {
-            return await petshop.obterItensPedido(pedidoId, petshopId);
-        } catch (erro) {
-            console.error("Erro em obterItensPedidoPetshop:", erro);
-            return [];
-        }
-    });
-
-    ipcMain.handle("atualizarStatusPedidoPetshop", async (_event, { id, petshopId, etapa, motivo }) => {
-        try {
-            await petshop.atualizarStatusPedido(id, petshopId, etapa, motivo);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em atualizarStatusPedidoPetshop:", erro);
-            return { sucesso: false, mensagem: "Erro ao atualizar status do pedido." };
-        }
-    });
-
-    ipcMain.handle("listarAgendamentosPetshop", async (_event, { petshopId, filtros }) => {
-        try {
-            return await petshop.listarAgendamentos(petshopId, filtros);
-        } catch (erro) {
-            console.error("Erro em listarAgendamentosPetshop:", erro);
-            return [];
-        }
-    });
-
-    ipcMain.handle("atualizarStatusAgendamentoPetshop", async (_event, { id, petshopId, status }) => {
-        try {
-            await petshop.atualizarStatusAgendamento(id, petshopId, status);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em atualizarStatusAgendamentoPetshop:", erro);
-            return { sucesso: false, mensagem: "Erro ao atualizar status do agendamento." };
-        }
-    });
-
-    handlerConsulta("obterPerfilPetshop", petshop.obterPerfil, null);
-    handlerConsulta("obterEnderecoUsuarioPetshop", petshop.obterEnderecoPrincipalUsuario, null);
-
-    ipcMain.handle("salvarPerfilPetshop", async (_event, { petshopId, dados }) => {
-        try {
-            await petshop.salvarPerfil(petshopId, dados);
-            return { sucesso: true };
-        } catch (erro) {
-            console.error("Erro em salvarPerfilPetshop:", erro);
-            return { sucesso: false, mensagem: "Erro ao salvar perfil." };
-        }
-    });
+    handlerConsulta("obterEnderecoUsuarioPetshop", async (usuarioId) => {
+        const [pedidos] = await pool.query(
+            "SELECT 1 FROM pedidos WHERE usuario_id = ? AND petshop_id = ? LIMIT 1",
+            [usuarioId, sessao.id]
+        );
+        return pedidos.length > 0 ? petshop.obterEnderecoPrincipalUsuario(usuarioId) : null;
+    }, null, PETSHOP);
 }
 
 function registrarHandlersRelatorios() {
-    handlerConsulta("obterRelatorioVendas", admin.obterRelatorioVendas, null);
+    handlerConsulta("obterRelatorioVendas", admin.obterRelatorioVendas, null, ADMIN);
 
     ipcMain.handle("exportarRelatorioPDF", async (event) => {
         try {
+            exigirPerfil(ADMIN_OU_PETSHOP);
             const janela = BrowserWindow.fromWebContents(event.sender);
             const buffer = await janela.webContents.printToPDF({ printBackground: true });
 
@@ -416,18 +275,26 @@ app.whenReady().then(async () => {
 
     try {
         await pool.query("SELECT 1");
-        console.log("Conectado ao banco hubpetshop (porta 3307).");
+        const { database, port } = pool.pool.config.connectionConfig;
+        console.log(`Conectado ao banco ${database} (porta ${port}).`);
     } catch (erro) {
         console.error("Falha ao conectar no banco hubpetshop:", erro.message);
     }
 
     ipcMain.handle("login", async (_event, credenciais) => {
         try {
-            return await auth.login(credenciais);
+            const resultado = await auth.login(credenciais);
+            sessao = resultado.sucesso ? resultado.usuario : null;
+            return resultado;
         } catch (erro) {
             console.error("Erro no login:", erro);
+            sessao = null;
             return { sucesso: false, mensagem: "Erro interno ao tentar entrar. Tente novamente." };
         }
+    });
+
+    ipcMain.handle("logout", () => {
+        sessao = null;
     });
 
     ipcMain.handle("cadastrarPetshop", async (_event, dados) => {

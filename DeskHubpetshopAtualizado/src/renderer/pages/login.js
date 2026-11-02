@@ -1,6 +1,4 @@
-// Tela de login — um único formulário para admin e petshop.
-// O papel (admin/petshop) é decidido pelo backend (src/main/db/auth.js),
-// não escolhido aqui.
+// Tela de login (admin e petshop).
 
 export function iniciarTelaLogin(aoLogar) {
     const telaLogin = document.getElementById("tela-login");

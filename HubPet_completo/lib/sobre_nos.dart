@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class SobreNosPage extends StatelessWidget {
   const SobreNosPage({super.key});
 
-  // ── Substitua pelos dados reais dos desenvolvedores ──
   static const List<Map<String, dynamic>> devs = [
     {
       'nome': 'Laura Soares Machado',
@@ -78,7 +77,6 @@ class SobreNosPage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
@@ -86,6 +84,7 @@ class SobreNosPage extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
                     ),
                     const Text(
                       'Sobre Nós',
@@ -109,7 +108,6 @@ class SobreNosPage extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.all(20),
                     children: [
-                      // Banner equipe
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -142,12 +140,10 @@ class SobreNosPage extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      // Cards dos devs
                       ...devs.map((dev) => _CardDev(dev: dev)),
 
                       const SizedBox(height: 10),
 
-                      // Sobre o projeto
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(

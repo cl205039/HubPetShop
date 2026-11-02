@@ -8,10 +8,6 @@ import 'nova_senha.dart';
 import 'escolha.dart';
 
 class Telainicio extends StatefulWidget {
-  // Quando `voltarAposLogin` é true, a tela foi aberta no meio de outro
-  // fluxo (ex.: fechamento da compra). Nesse caso, ao logar com sucesso
-  // ela apenas volta (`Navigator.pop(context, true)`) para quem a chamou,
-  // em vez de trocar a tela raiz do app.
   final bool voltarAposLogin;
   final String? mensagem;
 
@@ -21,11 +17,6 @@ class Telainicio extends StatefulWidget {
     this.mensagem,
   });
 
-  // Portão de login usado antes de ações que exigem dono (fechar a
-  // compra, confirmar agendamento). Mostra um aviso "você precisa
-  // fazer login para <ação>" com um botão que leva à tela de login e,
-  // se o login der certo, retorna `true` para o fluxo continuar.
-  // `acao` entra na frase: 'finalizar a compra', 'finalizar o agendamento'…
   static Future<bool> solicitarLogin(
     BuildContext context, {
     required String acao,
@@ -103,6 +94,8 @@ class _TelainicioState extends State<Telainicio> {
   final _senhaCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  final _emailRegex = RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+
   bool _verSenha = false;
   bool _carregando = false;
 
@@ -126,8 +119,6 @@ class _TelainicioState extends State<Telainicio> {
     if (usuario != null) {
       AppData.usuarioLogado = usuario;
 
-      // Aberta a partir de outro fluxo (ex.: fechamento da compra):
-      // volta sinalizando sucesso, sem trocar a tela raiz.
       if (widget.voltarAposLogin) {
         Navigator.pop(context, true);
         return;
@@ -175,8 +166,6 @@ class _TelainicioState extends State<Telainicio> {
         child: SafeArea(
           child: Stack(
             children: [
-              // Quando aberta no meio de outro fluxo, o cliente pode
-              // desistir do login e voltar (a compra não é finalizada).
               if (widget.voltarAposLogin)
                 Align(
                   alignment: Alignment.topLeft,
@@ -206,12 +195,12 @@ class _TelainicioState extends State<Telainicio> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Logo
                           Center(
                             child: Image.asset(
                               'assets/images/imagem.jpg.png',
                               height: 150,
                               width: 150,
+                              excludeFromSemantics: true,
                             ),
                           ),
 
@@ -235,7 +224,6 @@ class _TelainicioState extends State<Telainicio> {
 
                           const SizedBox(height: 25),
 
-                          // Campo e-mail
                           TextFormField(
                             controller: _emailCtrl,
                             keyboardType: TextInputType.emailAddress,
@@ -250,17 +238,18 @@ class _TelainicioState extends State<Telainicio> {
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.isEmpty) {
+                              if (v == null || v.trim().isEmpty) {
                                 return 'Informe o e-mail';
                               }
-                              if (!v.contains('@')) return 'E-mail inválido';
+                              if (!_emailRegex.hasMatch(v.trim())) {
+                                return 'E-mail inválido';
+                              }
                               return null;
                             },
                           ),
 
                           const SizedBox(height: 15),
 
-                          // Campo senha
                           TextFormField(
                             controller: _senhaCtrl,
                             obscureText: !_verSenha,
@@ -271,6 +260,8 @@ class _TelainicioState extends State<Telainicio> {
                                 icon: Icon(_verSenha
                                     ? Icons.visibility
                                     : Icons.visibility_off),
+                                tooltip:
+                                    _verSenha ? 'Ocultar senha' : 'Mostrar senha',
                                 onPressed: () =>
                                     setState(() => _verSenha = !_verSenha),
                               ),
@@ -307,7 +298,6 @@ class _TelainicioState extends State<Telainicio> {
 
                           const SizedBox(height: 5),
 
-                          // Botão entrar
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -354,8 +344,6 @@ class _TelainicioState extends State<Telainicio> {
                                       voltarAposLogin: widget.voltarAposLogin),
                                 ),
                               );
-                              // Cadastro já loga o usuário; se veio de outro
-                              // fluxo, volta pra lá sinalizando sucesso.
                               if (logou != true ||
                                   !widget.voltarAposLogin ||
                                   !context.mounted) {

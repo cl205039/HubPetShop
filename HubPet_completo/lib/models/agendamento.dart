@@ -1,16 +1,13 @@
 import 'json_utils.dart';
 
-// Um agendamento de serviço (banho, tosa, consulta...) feito por um
-// usuário num petshop, criado em agendar.dart e exibido em
-// agendamentos.dart.
 class Agendamento {
   int? id;
   int? usuarioId;
-  String servico; // nomes concatenados, ex. "Banho, Tosa"
+  String servico;
   String hora;
-  String status; // 'Confirmado' | 'Pendente' | 'Concluído'
+  String status;
   String pet;
-  String local; // nome do petshop
+  String local;
   int? petshopId;
   DateTime data;
 
@@ -38,7 +35,6 @@ class Agendamento {
         data: DateTime.tryParse(json['data'] as String? ?? '') ?? DateTime.now(),
       );
 
-  // Usado em POST /usuarios/{usuarioId}/agendamentos.
   Map<String, dynamic> toJson() => {
         'servico': servico,
         'hora': hora,

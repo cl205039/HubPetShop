@@ -207,8 +207,7 @@ function configurarValidacao(campo, ehValido) {
     campo.addEventListener("input", verificar);
 }
 
-// Consulta o ViaCEP (API pública, sem autenticação) assim que o usuário
-// completa os 8 dígitos do CEP, e preenche o resto do endereço sozinho.
+// Busca o endereço pelo CEP (ViaCEP).
 async function buscarEnderecoPorCep(campoCep, cepErro, campoRua, campoBairro, campoCidade, campoEstado) {
     const cep = digitosSomente(campoCep.value);
     cepErro.style.display = "none";

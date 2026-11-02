@@ -89,7 +89,7 @@ class _ServicosVetPageState extends State<ServicosVetPage>
       _nomeCtrl.clear();
       _precoCtrl.clear();
       _durCtrl.clear();
-      Navigator.pop(context); // fecha o bottom sheet
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Serviço adicionado! ✅'),
@@ -215,7 +215,6 @@ class _ServicosVetPageState extends State<ServicosVetPage>
         child: SafeArea(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 8, 20, 16),
                 child: Row(
@@ -223,6 +222,7 @@ class _ServicosVetPageState extends State<ServicosVetPage>
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
                     ),
                     const Expanded(
                       child: Text(
@@ -250,7 +250,6 @@ class _ServicosVetPageState extends State<ServicosVetPage>
                 ),
               ),
 
-              // Lista
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(20),
@@ -365,6 +364,7 @@ class _ServicosVetPageState extends State<ServicosVetPage>
                                                 Icons.delete_outline,
                                                 color: Colors.red,
                                                 size: 20),
+                                            tooltip: 'Remover serviço',
                                             onPressed: () => _removerServico(i),
                                           ),
                                         ],

@@ -1,6 +1,6 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
-import { criarBadgeStatus, ETAPA_LABELS } from "../shared/ui.js";
-import { confirmarAcao } from "../shared/confirmacao.js";
+import { criarBadgeStatus, ETAPA_LABELS, enderecoHtml, escaparHtml, formatarMoeda } from "../shared/ui.js";
+import { confirmarAcao, solicitarMotivoCancelamento } from "../shared/confirmacao.js";
 import { paginar, renderizarControlesPaginacao, ligarControlesPaginacao } from "../shared/paginacao.js";
 
 const ITENS_POR_PAGINA = 10;
@@ -10,13 +10,7 @@ let filtroBusca = "";
 let listaAtual = [];
 let paginaAtual = 1;
 
-function formatarMoeda(valor) {
-    return `R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// Prioriza `criado_em` (DATETIME real) — o campo `data` é texto livre vindo
-// de fora (já vimos valores como "Teste" ou "Hoje, 14:59") e não pode virar
-// exibição padrão da tabela.
+// Data do pedido: prioriza criado_em.
 function formatarDataHoraPedido(p) {
     const tentativas = [p.criado_em, p.data];
     for (const valor of tentativas) {
@@ -33,7 +27,7 @@ function formatarDataHoraPedido(p) {
 
 function estabelecimentoHtml(p) {
     const nome = p.petshop_nome || p.loja;
-    return nome ? nome : `<span class="texto-nao-vinculado">Não vinculado</span>`;
+    return nome ? escaparHtml(nome) : `<span class="texto-nao-vinculado">Não vinculado</span>`;
 }
 
 export async function montarPaginaPedidosAdmin(container) {
@@ -45,7 +39,7 @@ export async function montarPaginaPedidosAdmin(container) {
 
         <div class="painel">
             <div class="topo-tabela-container">
-                <input type="text" id="buscaPedidoAdmin" class="input-busca-moderno" placeholder="Buscar por cliente ou nº do pedido..." value="${filtroBusca}">
+                <input type="text" id="buscaPedidoAdmin" class="input-busca-moderno" placeholder="Buscar por cliente ou nº do pedido..." value="${escaparHtml(filtroBusca)}">
                 <select id="filtroStatusPedidoAdmin" class="select-filtro">
                     <option value="todos" ${filtroStatus === "todos" ? "selected" : ""}>Todos os Status</option>
                     ${ETAPA_LABELS.map((label, etapa) => `<option value="${etapa}" ${filtroStatus === String(etapa) ? "selected" : ""}>${label}</option>`).join("")}
@@ -132,8 +126,8 @@ function renderizarTabela() {
     tbody.innerHTML = itens.map((p) => `
         <tr>
             <td>#${String(p.id).padStart(4, "0")}</td>
-            <td class="celula-truncar" title="${p.cliente_nome || "Cliente removido"}"><strong>${p.cliente_nome || "Cliente removido"}</strong></td>
-            <td class="celula-truncar" title="${p.petshop_nome || p.loja || "Não vinculado"}">${estabelecimentoHtml(p)}</td>
+            <td class="celula-truncar" title="${escaparHtml(p.cliente_nome || "Cliente removido")}"><strong>${escaparHtml(p.cliente_nome || "Cliente removido")}</strong></td>
+            <td class="celula-truncar" title="${escaparHtml(p.petshop_nome || p.loja || "Não vinculado")}">${estabelecimentoHtml(p)}</td>
             <td class="celula-preco">${formatarMoeda(p.total)}</td>
             <td class="celula-data">${formatarDataHoraPedido(p)}</td>
             <td>${criarBadgeStatus(ETAPA_LABELS[p.etapa] || "Confirmado")}</td>
@@ -167,28 +161,37 @@ async function abrirGerenciamento(id) {
     lateral.classList.add("ativo");
 
     let itens = [];
+    let endereco = null;
     try {
-        itens = await window.api.obterItensPedido(id);
+        [itens, endereco] = await Promise.all([
+            window.api.obterItensPedido(id),
+            window.api.obterEnderecoUsuario(pedido.usuario_id)
+        ]);
     } catch (erro) {
-        console.error("Erro ao carregar itens do pedido:", erro);
+        console.error("Erro ao carregar detalhes do pedido:", erro);
     }
 
     const itensHtml = itens.length === 0
         ? "<p>Nenhum item registrado para este pedido.</p>"
-        : itens.map((i) => `<p>${i.quantidade}x <strong>${i.nome}</strong> — ${formatarMoeda(i.preco_unitario)} cada</p>`).join("");
+        : itens.map((i) => `<p>${escaparHtml(i.quantidade)}x <strong>${escaparHtml(i.nome)}</strong> — ${formatarMoeda(i.preco_unitario)} cada</p>`).join("");
 
     conteudo.innerHTML = `
         <div class="header-lateral-detalhes"><h2>Pedido #${String(pedido.id).padStart(4, "0")}</h2></div>
 
         <div class="secao-detalhes-lateral">
             <h3 class="titulo-secao-detalhes">👤 Cliente</h3>
-            <p><strong>Nome:</strong> ${pedido.cliente_nome || "Cliente removido"}</p>
-            <p><strong>Telefone:</strong> ${pedido.cliente_telefone || "Não informado"}</p>
+            <p><strong>Nome:</strong> ${escaparHtml(pedido.cliente_nome || "Cliente removido")}</p>
+            <p><strong>Telefone:</strong> ${escaparHtml(pedido.cliente_telefone || "Não informado")}</p>
         </div>
 
         <div class="secao-detalhes-lateral">
             <h3 class="titulo-secao-detalhes">🏬 Estabelecimento</h3>
             <p>${estabelecimentoHtml(pedido)}</p>
+        </div>
+
+        <div class="secao-detalhes-lateral">
+            <h3 class="titulo-secao-detalhes">📍 Endereço de Entrega</h3>
+            ${enderecoHtml(endereco)}
         </div>
 
         <div class="secao-detalhes-lateral">
@@ -199,31 +202,55 @@ async function abrirGerenciamento(id) {
 
         <div class="secao-detalhes-lateral">
             <h3 class="titulo-secao-detalhes">⚙️ Status do Pedido</h3>
-            <div class="grupo-formulario">
-                <label>Novo status:</label>
-                <select id="pedidoAdminNovoStatus" class="input-formulario select-formulario-edicao">
-                    ${ETAPA_LABELS.map((label, etapa) => `<option value="${etapa}" ${pedido.etapa === etapa ? "selected" : ""}>${label}</option>`).join("")}
-                </select>
-            </div>
-            <button id="btnAtualizarStatusPedido" class="btn-aprovar btn-salvar-lateral">Atualizar Pedido</button>
+            ${statusPedidoHtml(pedido)}
         </div>
     `;
 
-    document.getElementById("btnAtualizarStatusPedido").addEventListener("click", () => atualizarStatus(id));
+    const botaoAtualizar = document.getElementById("btnAtualizarStatusPedido");
+    if (botaoAtualizar) botaoAtualizar.addEventListener("click", () => atualizarStatus(id));
+}
+
+function statusPedidoHtml(pedido) {
+    if (pedido.etapa === 4) {
+        return `
+            <p><strong>${ETAPA_LABELS[4]}</strong>. Essa ação não pode ser desfeita.</p>
+            <p><strong>Motivo:</strong> ${escaparHtml(pedido.motivo_cancelamento || "Não informado")}</p>
+        `;
+    }
+
+    if (pedido.etapa === 3) {
+        return `<p><strong>${ETAPA_LABELS[3]}</strong>. Pedido finalizado, o status não pode mais ser alterado.</p>`;
+    }
+
+    return `
+        <div class="grupo-formulario">
+            <label>Novo status:</label>
+            <select id="pedidoAdminNovoStatus" class="input-formulario select-formulario-edicao">
+                ${ETAPA_LABELS.map((label, etapa) => `<option value="${etapa}" ${pedido.etapa === etapa ? "selected" : ""}>${label}</option>`).join("")}
+            </select>
+        </div>
+        <button id="btnAtualizarStatusPedido" class="btn-aprovar btn-salvar-lateral">Atualizar Pedido</button>
+    `;
 }
 
 async function atualizarStatus(id) {
     const novaEtapa = Number(document.getElementById("pedidoAdminNovoStatus").value);
+    let motivo = null;
 
-    const confirmado = await confirmarAcao({
-        titulo: "Atualizar status do pedido",
-        mensagem: `Confirma a mudança de status para "${ETAPA_LABELS[novaEtapa]}"?`,
-        textoConfirmar: "Atualizar"
-    });
-    if (!confirmado) return;
+    if (novaEtapa === 4) {
+        motivo = await solicitarMotivoCancelamento(`#${String(id).padStart(4, "0")}`);
+        if (!motivo) return;
+    } else {
+        const confirmado = await confirmarAcao({
+            titulo: "Atualizar status do pedido",
+            mensagem: `Confirma a mudança de status para "${ETAPA_LABELS[novaEtapa]}"?`,
+            textoConfirmar: "Atualizar"
+        });
+        if (!confirmado) return;
+    }
 
     try {
-        const resultado = await window.api.atualizarStatusPedido(id, novaEtapa);
+        const resultado = await window.api.atualizarStatusPedido(id, novaEtapa, motivo);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao(`Pedido #${String(id).padStart(4, "0")} atualizado para ${ETAPA_LABELS[novaEtapa]}!`);
         fecharPainel();

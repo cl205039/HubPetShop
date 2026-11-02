@@ -1,5 +1,5 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
-import { criarBadgeStatus, ETAPA_LABELS } from "../shared/ui.js";
+import { criarBadgeStatus, ETAPA_LABELS, escaparHtml, formatarMoeda } from "../shared/ui.js";
 
 let dataInicioAtual = "";
 let dataFimAtual = "";
@@ -54,14 +54,14 @@ function template() {
 
             <h3 style="margin-top: 30px; color: var(--roxo-principal);">Produtos Mais Vendidos</h3>
             <table class="tabela-relatorio">
-                <thead><tr><th>Produto</th><th>Quantidade Vendida</th><th>Receita</th></tr></thead>
+                <thead><tr><th>Produto</th><th>Petshop</th><th>Quantidade Vendida</th><th>Receita</th></tr></thead>
                 <tbody id="doc-tabela-produtos"></tbody>
             </table>
 
-            <h3 style="margin-top: 30px; color: var(--roxo-principal);">Serviços Cadastrados (por preço)</h3>
-            <p style="font-size: 0.8rem; color: #888;">Ainda não há vínculo entre agendamentos e o catálogo de serviços do petshop no banco, então esta lista mostra o catálogo cadastrado, não volume de vendas.</p>
+            <h3 style="margin-top: 30px; color: var(--roxo-principal);">Serviços Mais Agendados</h3>
+            <p style="font-size: 0.8rem; color: #888;">Contagem de agendamentos feitos pelo app no período, sem os cancelados. Os agendamentos não guardam preço, por isso não há coluna de receita.</p>
             <table class="tabela-relatorio">
-                <thead><tr><th>Serviço</th><th>Petshop</th><th>Preço</th></tr></thead>
+                <thead><tr><th>Serviço</th><th>Agendamentos</th></tr></thead>
                 <tbody id="doc-tabela-servicos"></tbody>
             </table>
 
@@ -102,7 +102,7 @@ function preencherRelatorio(dados) {
         : "Todo o período";
 
     document.getElementById("doc-resumo-mini").innerHTML = `
-        <div class="resumo-item-mini"><span>Faturamento</span><strong>R$ ${dados.faturamento.total.toFixed(2)}</strong></div>
+        <div class="resumo-item-mini"><span>Faturamento</span><strong>${formatarMoeda(dados.faturamento.total)}</strong></div>
         <div class="resumo-item-mini"><span>Pedidos no Período</span><strong>${dados.faturamento.quantidade}</strong></div>
     `;
 
@@ -113,22 +113,22 @@ function preencherRelatorio(dados) {
             <tr>
                 <td>${criarBadgeStatus(ETAPA_LABELS[p.etapa] || "Confirmado")}</td>
                 <td>${p.quantidade}</td>
-                <td>R$ ${p.total.toFixed(2)}</td>
+                <td>${formatarMoeda(p.total)}</td>
             </tr>
         `).join("");
 
     const tbodyProdutos = document.getElementById("doc-tabela-produtos");
     tbodyProdutos.innerHTML = dados.ranking.produtosMaisVendidos.length === 0
-        ? `<tr><td colspan="3" style="text-align:center;">Nenhuma venda registrada ainda.</td></tr>`
+        ? `<tr><td colspan="4" style="text-align:center;">Nenhuma venda registrada no período.</td></tr>`
         : dados.ranking.produtosMaisVendidos.map((p) => `
-            <tr><td>${p.nome}</td><td>${p.quantidade}</td><td>R$ ${p.receita.toFixed(2)}</td></tr>
+            <tr><td>${escaparHtml(p.nome)}</td><td>${escaparHtml(p.petshop || "—")}</td><td>${p.quantidade}</td><td>${formatarMoeda(p.receita)}</td></tr>
         `).join("");
 
     const tbodyServicos = document.getElementById("doc-tabela-servicos");
-    tbodyServicos.innerHTML = dados.ranking.servicosCadastrados.length === 0
-        ? `<tr><td colspan="3" style="text-align:center;">Nenhum serviço cadastrado ainda.</td></tr>`
-        : dados.ranking.servicosCadastrados.map((s) => `
-            <tr><td>${s.nome}</td><td>${s.petshop || "—"}</td><td>R$ ${s.preco.toFixed(2)}</td></tr>
+    tbodyServicos.innerHTML = dados.ranking.servicosMaisAgendados.length === 0
+        ? `<tr><td colspan="2" style="text-align:center;">Nenhum agendamento no período.</td></tr>`
+        : dados.ranking.servicosMaisAgendados.map((s) => `
+            <tr><td>${escaparHtml(s.nome)}</td><td>${s.quantidade}</td></tr>
         `).join("");
 }
 
@@ -140,7 +140,7 @@ async function exportarPdf() {
     try {
         const resultado = await window.api.exportarRelatorioPDF();
         if (resultado.cancelado) {
-            // usuário fechou o diálogo de salvar sem escolher local — não é erro
+            // Usuário fechou o diálogo de salvar.
         } else if (!resultado.sucesso) {
             throw new Error(resultado.mensagem);
         } else {

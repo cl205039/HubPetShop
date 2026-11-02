@@ -1,9 +1,6 @@
 import '../api_client.dart';
 import '../models/servico.dart';
 
-/// Catálogo global de serviços de agendamento (banho, tosa, consulta...),
-/// usado em agendar.dart. Diferente de ServicoVetService, que é o CRUD
-/// de serviços de um veterinário específico.
 class ServicoService {
   ServicoService._();
 

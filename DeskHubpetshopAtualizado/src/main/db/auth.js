@@ -90,19 +90,39 @@ async function cadastrarPetshop(dados) {
         return { sucesso: false, mensagem: "Já existe um cadastro com este e-mail." };
     }
 
+    const [cnpjExistente] = await pool.query(
+        "SELECT id FROM petshops WHERE cnpj = ? LIMIT 1",
+        [dados.cnpj]
+    );
+    if (cnpjExistente.length > 0) {
+        return { sucesso: false, mensagem: "Já existe um cadastro com este CNPJ." };
+    }
+
     const senhaHash = await bcrypt.hash(dados.senha, 10);
 
-    const [resultado] = await pool.query(
-        `INSERT INTO petshops (nome, email, senha, telefone, cnpj, tipo, descricao, aprovado, bloqueado)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)`,
-        [dados.nome, dados.email, senhaHash, dados.telefone, dados.cnpj, dados.tipo, dados.descricao || null]
-    );
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
 
-    await pool.query(
-        `INSERT INTO enderecos_petshops (petshop_id, cep, rua, numero, bairro, cidade, estado)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [resultado.insertId, dados.cep, dados.rua, dados.numero, dados.bairro, dados.cidade, dados.estado]
-    );
+        const [resultado] = await conn.query(
+            `INSERT INTO petshops (nome, email, senha, telefone, cnpj, tipo, descricao, aprovado, bloqueado)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)`,
+            [dados.nome, dados.email, senhaHash, dados.telefone, dados.cnpj, dados.tipo, dados.descricao || null]
+        );
+
+        await conn.query(
+            `INSERT INTO enderecos_petshops (petshop_id, cep, rua, numero, bairro, cidade, estado)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [resultado.insertId, dados.cep, dados.rua, dados.numero, dados.bairro, dados.cidade, dados.estado]
+        );
+
+        await conn.commit();
+    } catch (erro) {
+        await conn.rollback();
+        throw erro;
+    } finally {
+        conn.release();
+    }
 
     return { sucesso: true };
 }

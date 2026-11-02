@@ -1,7 +1,5 @@
 import 'json_utils.dart';
 
-// Usuário (dono de pet ou veterinário). Vem da API depois de
-// cadastro/login; `id` só existe depois que o servidor cria o registro.
 class Usuario {
   int? id;
   String nome;
@@ -11,7 +9,7 @@ class Usuario {
   String senha;
   bool aceitaNewsletter;
   bool aceitaTermos;
-  String tipoUsuario; // 'pessoafisica' | 'pessoajuridica' | 'veterinario'
+  String tipoUsuario;
   bool notificacoes;
   bool localizacao;
 
@@ -35,7 +33,6 @@ class Usuario {
         cpf: json['cpf'] as String? ?? '',
         email: json['email'] as String? ?? '',
         telefone: json['telefone'] as String? ?? '',
-        // A API nunca devolve senha — fica vazia depois do login/cadastro.
         aceitaNewsletter: json['aceitaNewsletter'] as bool? ?? false,
         aceitaTermos: json['aceitaTermos'] as bool? ?? false,
         tipoUsuario: json['tipoUsuario'] as String? ?? 'pessoafisica',
@@ -43,7 +40,6 @@ class Usuario {
         localizacao: json['localizacao'] as bool? ?? false,
       );
 
-  // Usado em POST /usuarios (cadastro) e POST /usuarios/login.
   Map<String, dynamic> toJson() => {
         'nome': nome,
         'cpf': cpf,

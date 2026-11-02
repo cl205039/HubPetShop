@@ -1,11 +1,10 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
-import { criarBadgeStatus } from "../shared/ui.js";
-import { confirmarAcao } from "../shared/confirmacao.js";
+import { criarBadgeStatus, escaparHtml, formatarMoeda } from "../shared/ui.js";
+import { confirmarAcao, abrirModalFormulario, fecharModalFormulario } from "../shared/confirmacao.js";
 
 const LIMITE_ESTOQUE_BAIXO = 5;
 
-// Rótulo curto exibido na pill -> nome real da categoria no banco (algumas
-// categorias têm nome mais longo, ex.: "Higiene e Limpeza").
+// Rótulo da pill -> nome da categoria no banco.
 const FILTROS_CATEGORIA = [
     { rotulo: "Todos", valor: "todos" },
     { rotulo: "Rações", valor: "Rações" },
@@ -20,11 +19,8 @@ let filtroBusca = "";
 let filtroCategoriaAtiva = "todos";
 let listaAtual = [];
 let categoriasCache = [];
-let petshopIdAtual = null;
 
-export async function montarPaginaProdutos(container, petshopId) {
-    petshopIdAtual = petshopId;
-
+export async function montarPaginaProdutos(container) {
     const pillsHtml = FILTROS_CATEGORIA.map((f) => `
         <button class="pill-categoria ${f.valor === filtroCategoriaAtiva ? "ativo" : ""}" data-categoria="${f.valor}">${f.rotulo}</button>
     `).join("");
@@ -37,7 +33,7 @@ export async function montarPaginaProdutos(container, petshopId) {
             </div>
             <p class="resumo-produtos-topo" id="resumoProdutosTopo">Carregando...</p>
             <div class="topo-tabela-container">
-                <input type="text" id="buscaProduto" class="input-busca-moderno input-busca-largura-total" placeholder="Buscar produto..." value="${filtroBusca}">
+                <input type="text" id="buscaProduto" class="input-busca-moderno input-busca-largura-total" placeholder="Buscar produto..." value="${escaparHtml(filtroBusca)}">
             </div>
             <div class="filtro-categorias-pills" id="filtroCategoriasPills">
                 ${pillsHtml}
@@ -93,7 +89,7 @@ async function carregarLista() {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px;">Carregando produtos...</td></tr>`;
 
     try {
-        listaAtual = await window.api.listarProdutos(petshopIdAtual, { busca: filtroBusca });
+        listaAtual = await window.api.listarProdutos({ busca: filtroBusca });
         renderizarTabela();
     } catch (erro) {
         console.error("Erro ao carregar produtos:", erro);
@@ -159,9 +155,9 @@ function renderizarTabela() {
         const estoqueBaixo = p.estoque < LIMITE_ESTOQUE_BAIXO;
         return `
             <tr>
-                <td><strong>${p.nome}</strong></td>
-                <td>${p.categoria_nome || "Sem categoria"}</td>
-                <td class="celula-preco">R$ ${Number(p.preco).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td><strong>${escaparHtml(p.nome)}</strong></td>
+                <td>${escaparHtml(p.categoria_nome || "Sem categoria")}</td>
+                <td class="celula-preco">${formatarMoeda(p.preco)}</td>
                 <td>
                     <div style="display:flex; align-items:center; gap:6px;">
                         <input type="number" min="0" class="input-formulario input-estoque-inline ${estoqueBaixo ? "input-estoque-baixo" : ""}" data-id="${p.id}" value="${p.estoque}" style="width:70px;">
@@ -198,7 +194,7 @@ async function salvarEstoque(id) {
     const novoEstoque = Number(input.value);
 
     try {
-        const resultado = await window.api.atualizarEstoqueProduto(id, petshopIdAtual, novoEstoque);
+        const resultado = await window.api.atualizarEstoqueProduto(id, novoEstoque);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao("Estoque atualizado!");
         await carregarLista();
@@ -221,8 +217,8 @@ async function alterarStatus(id, ativar) {
 
     try {
         const resultado = ativar
-            ? await window.api.ativarProduto(id, petshopIdAtual)
-            : await window.api.desativarProduto(id, petshopIdAtual);
+            ? await window.api.ativarProduto(id)
+            : await window.api.desativarProduto(id);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao(ativar ? "Produto ativado." : "Produto desativado.");
         await carregarLista();
@@ -232,24 +228,19 @@ async function alterarStatus(id, ativar) {
     }
 }
 
-function fecharModal() {
-    const overlay = document.getElementById("overlay-produto");
-    if (overlay) overlay.remove();
-}
-
 function templateFormulario(p) {
     const opcoesCategorias = categoriasCache.map((c) => `
-        <option value="${c.id}" ${p?.categoria_id === c.id ? "selected" : ""}>${c.nome}</option>
+        <option value="${c.id}" ${p?.categoria_id === c.id ? "selected" : ""}>${escaparHtml(c.nome)}</option>
     `).join("");
 
     return `
         <div class="grupo-formulario">
             <label>Nome do Produto:</label>
-            <input type="text" id="produtoNome" value="${p?.nome || ""}" class="input-formulario" required>
+            <input type="text" id="produtoNome" value="${escaparHtml(p?.nome || "")}" class="input-formulario" required>
         </div>
         <div class="grupo-formulario">
             <label>Descrição:</label>
-            <textarea id="produtoDescricao" class="textarea-formulario">${p?.descricao || ""}</textarea>
+            <textarea id="produtoDescricao" class="textarea-formulario">${escaparHtml(p?.descricao || "")}</textarea>
         </div>
         <div class="grupo-formulario">
             <label>Categoria:</label>
@@ -260,7 +251,7 @@ function templateFormulario(p) {
         </div>
         <div class="grupo-formulario">
             <label>Preço (R$):</label>
-            <input type="number" min="0" step="0.01" id="produtoPreco" value="${p?.preco ?? ""}" class="input-formulario" required>
+            <input type="number" min="0" step="0.01" id="produtoPreco" value="${escaparHtml(p?.preco ?? "")}" class="input-formulario" required>
         </div>
         ${!p ? `
             <div class="grupo-formulario">
@@ -273,25 +264,7 @@ function templateFormulario(p) {
 }
 
 function abrirModal(titulo, conteudoHtml, aoSalvar) {
-    fecharModal();
-
-    const overlay = document.createElement("div");
-    overlay.id = "overlay-produto";
-    overlay.className = "overlay-confirmacao";
-    overlay.innerHTML = `
-        <div class="card-confirmacao card-formulario-modal">
-            <button type="button" class="btn-fechar-modal" id="btnFecharModalProduto">✕</button>
-            <h3>${titulo}</h3>
-            ${conteudoHtml}
-        </div>
-    `;
-
-    overlay.addEventListener("click", (evento) => {
-        if (evento.target === overlay) fecharModal();
-    });
-    document.body.appendChild(overlay);
-
-    document.getElementById("btnFecharModalProduto").addEventListener("click", fecharModal);
+    abrirModalFormulario(titulo, conteudoHtml);
     document.getElementById("btnSalvarProduto").addEventListener("click", aoSalvar);
 }
 
@@ -324,10 +297,10 @@ async function salvarNovo() {
     }
 
     try {
-        const resultado = await window.api.cadastrarProduto(petshopIdAtual, dados);
+        const resultado = await window.api.cadastrarProduto(dados);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao("Produto cadastrado com sucesso!");
-        fecharModal();
+        fecharModalFormulario();
         await carregarLista();
     } catch (erro) {
         console.error("Erro ao cadastrar produto:", erro);
@@ -344,10 +317,10 @@ async function salvarEdicao(id) {
     }
 
     try {
-        const resultado = await window.api.editarProduto(id, petshopIdAtual, dados);
+        const resultado = await window.api.editarProduto(id, dados);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao("Produto atualizado com sucesso!");
-        fecharModal();
+        fecharModalFormulario();
         await carregarLista();
     } catch (erro) {
         console.error("Erro ao editar produto:", erro);

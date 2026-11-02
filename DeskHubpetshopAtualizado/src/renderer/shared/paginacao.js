@@ -1,6 +1,4 @@
-// Paginação client-side: as páginas já buscam a lista inteira (filtrada)
-// do banco de uma vez — isso só fatia o array em blocos de N itens pra
-// exibição, sem round-trip novo ao MySQL a cada página.
+// Paginação client-side da lista já carregada.
 export function paginar(lista, pagina, itensPorPagina) {
     const totalPaginas = Math.max(1, Math.ceil(lista.length / itensPorPagina));
     const paginaAtual = Math.min(Math.max(1, pagina), totalPaginas);

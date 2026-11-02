@@ -63,7 +63,6 @@ class _NovaSenhaPageState extends State<NovaSenhaPage> {
     );
   }
 
-  // Pede pra API redefinir a senha do e-mail informado.
   Future<void> _confirmar() async {
     final email = emailCtrl.text.trim();
     final senha = senhaCtrl.text;
@@ -126,6 +125,7 @@ class _NovaSenhaPageState extends State<NovaSenhaPage> {
                     ? Icons.visibility_off
                     : Icons.visibility,
               ),
+              tooltip: obscure ? 'Mostrar senha' : 'Ocultar senha',
               onPressed: toggle,
             ),
             border: OutlineInputBorder(
@@ -183,7 +183,6 @@ class _NovaSenhaPageState extends State<NovaSenhaPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Campo de e-mail (identifica o usuário na API)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 15),
                         child: TextField(

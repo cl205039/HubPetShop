@@ -1,4 +1,4 @@
-import { criarBadgeStatus } from "../shared/ui.js";
+import { criarBadgeStatus, escaparHtml, ligarNavegacao, formatarMoeda, dataISO } from "../shared/ui.js";
 
 const LIMITE_ESTOQUE_BAIXO = 5;
 
@@ -8,14 +8,14 @@ const FRASES_MOTIVACIONAIS = [
     "Pronto para atender?"
 ];
 
-export async function montarDashboardPetshop(container, petshopId, nomePetshop) {
+export async function montarDashboardPetshop(container, nomePetshop) {
     container.innerHTML = "<p style='padding:20px;'>Carregando dashboard...</p>";
 
     try {
         const [dados, agendamentosHoje, produtos] = await Promise.all([
-            window.api.obterDashboardPetshop(petshopId),
-            window.api.listarAgendamentosPetshop(petshopId, { status: "todos", data: dataHojeISO() }),
-            window.api.listarProdutos(petshopId, {})
+            window.api.obterDashboardPetshop(),
+            window.api.listarAgendamentosPetshop({ status: "todos", data: dataISO(new Date()) }),
+            window.api.listarProdutos({})
         ]);
 
         const produtosEstoqueBaixo = produtos.filter((p) => p.estoque < LIMITE_ESTOQUE_BAIXO);
@@ -26,20 +26,6 @@ export async function montarDashboardPetshop(container, petshopId, nomePetshop) 
         console.error("Erro ao carregar dashboard do petshop:", erro);
         container.innerHTML = "<p style='color:red; padding:20px;'>Erro ao carregar dashboard.</p>";
     }
-}
-
-function dataHojeISO() {
-    const hoje = new Date();
-    const ano = hoje.getFullYear();
-    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-    const dia = String(hoje.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
-}
-
-function ligarNavegacao(container) {
-    container.querySelectorAll("[data-pagina]").forEach((elemento) => {
-        elemento.addEventListener("click", () => window.carregarPagina(elemento.dataset.pagina));
-    });
 }
 
 function template(d, nomePetshop, agendamentosHoje, produtosEstoqueBaixo) {
@@ -55,7 +41,7 @@ function template(d, nomePetshop, agendamentosHoje, produtosEstoqueBaixo) {
 
     return `
         <div class="dashboard-header">
-            <h2 class="dashboard-title">Olá, ${nomePetshop || "Petshop"}! 👋</h2>
+            <h2 class="dashboard-title">Olá, ${escaparHtml(nomePetshop || "Petshop")}! 👋</h2>
             <small class="dashboard-date">Hoje é ${dataFormatada}</small>
             <p class="dashboard-frase-motivacional">${frase}</p>
         </div>
@@ -91,13 +77,13 @@ function template(d, nomePetshop, agendamentosHoje, produtosEstoqueBaixo) {
             <div class="coluna-dashboard-esquerda">
                 <div class="painel card-receita-unificado">
                     <h3>💰 Receita do Mês</h3>
-                    <p class="valor-receita-destaque ${d.receitaMes > 0 ? "valor-positivo" : "valor-neutro"}">R$ ${d.receitaMes.toFixed(2)}</p>
+                    <p class="valor-receita-destaque ${d.receitaMes > 0 ? "valor-positivo" : "valor-neutro"}">${formatarMoeda(d.receitaMes)}</p>
 
                     ${temReceita ? `
                         <div class="grafico-container">
                             ${d.graficoReceitaMensal.map((m) => `
                                 <div class="barra-container">
-                                    <span>R$ ${m.total.toFixed(0)}</span>
+                                    <span>${formatarMoeda(m.total)}</span>
                                     <div class="barra" style="height:${Math.max(4, (m.total / maiorValor) * 100)}%">
                                         <span class="label-barra">${m.label}</span>
                                     </div>
@@ -119,8 +105,8 @@ function template(d, nomePetshop, agendamentosHoje, produtosEstoqueBaixo) {
                         : `<ul class="lista-agendamentos-dia">
                             ${agendamentosHoje.map((ag) => `
                                 <li>
-                                    <span class="agendamento-hora">${ag.hora || "—"}</span>
-                                    <span class="agendamento-info"><strong>${ag.pet || "Pet"}</strong> (${ag.tutor_nome || "Tutor"}) — ${ag.servico || "Serviço"}</span>
+                                    <span class="agendamento-hora">${escaparHtml(ag.hora || "—")}</span>
+                                    <span class="agendamento-info"><strong>${escaparHtml(ag.pet || "Pet")}</strong> (${escaparHtml(ag.tutor_nome || "Tutor")}) — ${escaparHtml(ag.servico || "Serviço")}</span>
                                     ${criarBadgeStatus(ag.status)}
                                 </li>
                             `).join("")}
@@ -135,7 +121,7 @@ function template(d, nomePetshop, agendamentosHoje, produtosEstoqueBaixo) {
                     ${produtosEstoqueBaixo.length === 0
                         ? `<p class="mensagem-lista-vazia">Tudo em ordem! ✅</p>`
                         : `<ul class="alerta-lista">
-                            ${produtosEstoqueBaixo.map((p) => `<li class="alerta-item">⚠️ ${p.nome} — ${p.estoque} unidade(s)</li>`).join("")}
+                            ${produtosEstoqueBaixo.map((p) => `<li class="alerta-item">⚠️ ${escaparHtml(p.nome)} — ${escaparHtml(p.estoque)} unidade(s)</li>`).join("")}
                         </ul>`
                     }
                 </div>

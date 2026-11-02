@@ -5,10 +5,9 @@ import 'models/agendamento.dart';
 import 'services/agendamento_service.dart';
 import 'agendamentos.dart';
 import 'telainicio.dart';
+import 'formas_pagamento.dart';
 
 class PagamentosPage extends StatefulWidget {
-  // Quando aberta a partir de um agendamento, recebe o valor, o resumo
-  // e o agendamento a ser salvo na API.
   final double? valor;
   final String? resumo;
   final Agendamento? agendamento;
@@ -24,15 +23,29 @@ class _PagamentosPageState extends State<PagamentosPage> {
 
   bool _enviando = false;
 
+  FormaPagamento _formaPagamento = FormaPagamento.local;
+  final _cartao = ControladoresCartao();
+
+  @override
+  void dispose() {
+    _cartao.dispose();
+    super.dispose();
+  }
+
   String _formatarPreco(double v) =>
       'R\$ ${v.toStringAsFixed(2).replaceAll('.', ',')}';
 
   Future<void> _confirmar() async {
-    // Igual ao fechamento da compra (carrinho.dart): o login só é
-    // exigido aqui, ao confirmar o agendamento. Se o cliente não está
-    // logado, mostra o aviso ("você precisa fazer login para finalizar
-    // o agendamento") com um botão que leva ao login e retoma a
-    // confirmação ao voltar.
+    if (!pagamentoValido(_formaPagamento, _cartao)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preencha os dados do cartão para continuar'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (widget.agendamento != null && AppData.usuarioLogado == null) {
       final logou = await Telainicio.solicitarLogin(
         context,
@@ -64,22 +77,22 @@ class _PagamentosPageState extends State<PagamentosPage> {
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.event_available, color: Colors.green, size: 60),
-            SizedBox(height: 12),
-            Text(
+            const Icon(Icons.event_available, color: Colors.green, size: 60),
+            const SizedBox(height: 12),
+            const Text(
               'Agendamento confirmado! 🐾',
               textAlign: TextAlign.center,
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Você optou por pagar na consulta.\n'
+              '${mensagemConfirmacaoPagamento(_formaPagamento, localTexto: 'Você optou por pagar na consulta.')}\n'
               'Veja em "Meus Agendamentos".',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: const TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -87,8 +100,7 @@ class _PagamentosPageState extends State<PagamentosPage> {
           Center(
             child: TextButton(
               onPressed: () {
-                Navigator.pop(context); // fecha o diálogo
-                // Volta para a raiz e abre Meus Agendamentos.
+                Navigator.pop(context);
                 Navigator.popUntil(context, (rota) => rota.isFirst);
                 Navigator.push(
                   context,
@@ -123,6 +135,7 @@ class _PagamentosPageState extends State<PagamentosPage> {
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    tooltip: 'Voltar',
                   ),
                   const Expanded(
                     child: Center(
@@ -153,95 +166,88 @@ class _PagamentosPageState extends State<PagamentosPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Resumo do agendamento
-                      if (widget.valor != null) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: _roxo.withAlpha(15),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                      Expanded(
+                        child: SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Resumo do agendamento',
+                              if (widget.valor != null) ...[
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  decoration: BoxDecoration(
+                                    color: _roxo.withAlpha(15),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Resumo do agendamento',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold)),
+                                      if (widget.resumo != null) ...[
+                                        const SizedBox(height: 6),
+                                        Text(widget.resumo!,
+                                            style: const TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 13)),
+                                      ],
+                                      const Divider(height: 20),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('Total',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.bold)),
+                                          Text(
+                                            _formatarPreco(widget.valor!),
+                                            style: const TextStyle(
+                                                color: Colors.orange,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              const Text('Forma de pagamento',
                                   style:
                                       TextStyle(fontWeight: FontWeight.bold)),
-                              if (widget.resumo != null) ...[
-                                const SizedBox(height: 6),
-                                Text(widget.resumo!,
-                                    style: const TextStyle(
-                                        color: Colors.grey, fontSize: 13)),
-                              ],
-                              const Divider(height: 20),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Total',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  Text(
-                                    _formatarPreco(widget.valor!),
-                                    style: const TextStyle(
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
-                                  ),
-                                ],
+                              const SizedBox(height: 12),
+
+                              SeletorFormaPagamento(
+                                valor: _formaPagamento,
+                                onChanged: (f) =>
+                                    setState(() => _formaPagamento = f),
+                                tituloLocal: 'Na consulta',
+                                subtituloLocal:
+                                    'Pague no local, no dia do atendimento',
+                                iconeLocal: Icons.store,
+                              ),
+
+                              const SizedBox(height: 20),
+                              PainelFormaPagamento(
+                                forma: _formaPagamento,
+                                cartao: _cartao,
+                                onEditado: () => setState(() {}),
+                                tituloLocal: 'Pagar na consulta',
+                                subtituloLocal:
+                                    'Pague no local, no dia do atendimento',
+                                iconeLocal: Icons.store,
                               ),
                             ],
                           ),
                         ),
-                      ],
-
-                      const Text('Forma de pagamento',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 12),
-
-                      // Única forma: pagar na consulta
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.green.withAlpha(80),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.store, color: Colors.white, size: 30),
-                            SizedBox(width: 15),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Pagar na consulta',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white),
-                                  ),
-                                  Text(
-                                    'Pague no local, no dia do atendimento',
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(Icons.check_circle, color: Colors.white),
-                          ],
-                        ),
                       ),
 
-                      const Spacer(),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(

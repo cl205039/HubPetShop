@@ -15,13 +15,10 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
     with RouteAware, RecarregaAoVoltar {
   final _buscaCtrl = TextEditingController();
 
-  // Atributo selecionado para busca
   String _atributo = 'nome';
 
-  // Resultados filtrados
   List<Usuario> _resultados = [];
 
-  // Se o usuário já digitou algo
   bool _digitou = false;
   bool _buscando = false;
   String? _erro;
@@ -50,8 +47,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
       final total = await UsuarioService.total();
       if (mounted) setState(() => _totalCadastrados = total);
     } on ApiException {
-      // Se a API estiver fora, apenas não mostra o contador — a busca
-      // em si continua tentando normalmente.
     }
   }
 
@@ -75,9 +70,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
 
     setState(() => _buscando = true);
     try {
-      // A busca por "tipo" filtra pelo rótulo legível (ex. "Veterinário"),
-      // igual ao que o usuário vê nos chips de dica — a API compara
-      // contra o rótulo em português, não o valor interno do enum.
       final resultados =
           await UsuarioService.buscar(atributo: _atributo, termo: termo);
       if (!mounted) return;
@@ -94,7 +86,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
     }
   }
 
-  // Converte o valor interno do tipo para texto legível
   String _tipoLabel(String tipo) {
     switch (tipo) {
       case 'pessoafisica':
@@ -144,7 +135,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
         child: SafeArea(
           child: Column(
             children: [
-              // ── Header ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
                 child: Row(
@@ -152,6 +142,7 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
                     ),
                     const Expanded(
                       child: Text(
@@ -163,7 +154,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                         ),
                       ),
                     ),
-                    // Total de cadastrados
                     if (_totalCadastrados != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -184,7 +174,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
 
               const SizedBox(height: 12),
 
-              // ── Campo de busca ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
@@ -204,6 +193,7 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                       suffixIcon: _buscaCtrl.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, color: Colors.grey),
+                              tooltip: 'Limpar busca',
                               onPressed: () {
                                 _buscaCtrl.clear();
                                 _buscar('');
@@ -218,7 +208,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
 
               const SizedBox(height: 12),
 
-              // ── Chips de atributo ──
               SizedBox(
                 height: 38,
                 child: ListView.separated(
@@ -274,7 +263,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
 
               const SizedBox(height: 12),
 
-              // ── Área de resultados ──
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -286,7 +274,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Cabeçalho dos resultados
                       if (_digitou && !_buscando && _erro == null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -311,7 +298,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                           ),
                         ),
 
-                      // Estado inicial — instrução
                       if (!_digitou)
                         Expanded(
                           child: Center(
@@ -328,7 +314,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                                       color: Colors.grey, fontSize: 15),
                                 ),
                                 const SizedBox(height: 20),
-                                // Dica de tipos disponíveis
                                 Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
@@ -370,13 +355,11 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                           ),
                         ),
 
-                      // Buscando
                       if (_digitou && _buscando)
                         const Expanded(
                           child: Center(child: CircularProgressIndicator()),
                         ),
 
-                      // Erro
                       if (_digitou && !_buscando && _erro != null)
                         Expanded(
                           child: Center(
@@ -396,7 +379,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                           ),
                         ),
 
-                      // Sem resultados
                       if (_digitou &&
                           !_buscando &&
                           _erro == null &&
@@ -420,7 +402,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                           ),
                         ),
 
-                      // Lista de resultados
                       if (_digitou &&
                           !_buscando &&
                           _erro == null &&
@@ -443,7 +424,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                                 ),
                                 child: Row(
                                   children: [
-                                    // Avatar com inicial
                                     CircleAvatar(
                                       radius: 26,
                                       backgroundColor: cor.withAlpha(30),
@@ -453,13 +433,11 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                                       ),
                                     ),
                                     const SizedBox(width: 12),
-                                    // Dados
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Nome + badge tipo
                                           Row(
                                             children: [
                                               Expanded(
@@ -493,7 +471,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                                             ],
                                           ),
                                           const SizedBox(height: 4),
-                                          // Email
                                           Row(
                                             children: [
                                               const Icon(Icons.email_outlined,
@@ -512,7 +489,6 @@ class _BuscaUsuariosPageState extends State<BuscaUsuariosPage>
                                             ],
                                           ),
                                           const SizedBox(height: 2),
-                                          // Telefone
                                           Row(
                                             children: [
                                               const Icon(Icons.phone_outlined,

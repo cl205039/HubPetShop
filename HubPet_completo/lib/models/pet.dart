@@ -1,7 +1,5 @@
 import 'json_utils.dart';
 
-// Pet de um usuário. Idade/peso/nascimento ficam como texto livre
-// (como já eram no formulário de cadastro), não campos tipados.
 class Pet {
   int? id;
   int? usuarioId;
@@ -37,7 +35,6 @@ class Pet {
         sexo: json['sexo'] as String? ?? '',
       );
 
-  // Usado em POST /usuarios/{usuarioId}/pets (usuarioId já vai na URL).
   Map<String, dynamic> toJson() => {
         'nome': nome,
         'tipo': tipo,

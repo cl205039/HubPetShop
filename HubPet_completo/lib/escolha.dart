@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'telacadastro.dart';
 
 class EscolhaPage extends StatelessWidget {
-  // Repassado ao cadastro: quando true, o fluxo foi iniciado no
-  // fechamento da compra e deve voltar para lá ao concluir.
   final bool voltarAposLogin;
 
   const EscolhaPage({super.key, this.voltarAposLogin = false});
@@ -29,6 +27,7 @@ class EscolhaPage extends StatelessWidget {
                   'assets/images/imagem.jpg.png',
                   height: 150,
                   width: 150,
+                  excludeFromSemantics: true,
                 ),
                 const SizedBox(height: 15),
                 const Text(
@@ -53,8 +52,6 @@ class EscolhaPage extends StatelessWidget {
                             CadastroPage(voltarAposLogin: voltarAposLogin),
                       ),
                     );
-                    // Repassa o sucesso do cadastro para quem abriu a
-                    // escolha (fluxo de fechamento da compra).
                     if (logou != true || !voltarAposLogin || !context.mounted) {
                       return;
                     }

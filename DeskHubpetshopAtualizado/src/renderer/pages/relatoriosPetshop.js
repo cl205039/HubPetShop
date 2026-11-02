@@ -1,13 +1,11 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
+import { escaparHtml, formatarMoeda } from "../shared/ui.js";
 
-let petshopIdAtual = null;
 let periodoAtivo = "mes-atual";
 let dataInicioCustom = "";
 let dataFimCustom = "";
 
-export async function montarPaginaRelatoriosPetshop(container, petshopId) {
-    petshopIdAtual = petshopId;
-
+export async function montarPaginaRelatoriosPetshop(container) {
     container.innerHTML = `
         <div class="painel">
             <div class="topo-tabela-container" style="justify-content: space-between; align-items: center;">
@@ -99,7 +97,6 @@ function resolverPeriodo() {
         return { inicio: inicioMes(new Date(hoje.getFullYear(), hoje.getMonth() - 2, 1)), fim: fimDia(hoje) };
     }
 
-    // "mes-atual" (padrão)
     return { inicio: inicioMes(hoje), fim: fimDia(hoje) };
 }
 
@@ -122,7 +119,7 @@ function formatarDataCurta(data) {
 }
 
 // =========================
-// Cálculos (tudo client-side, a partir dos dados já trazidos pelo window.api)
+// Cálculos
 // =========================
 function calcularResumoFinanceiro(pedidosPeriodo, pedidosPeriodoAnterior) {
     const validos = pedidosPeriodo.filter((p) => p.etapa !== 4);
@@ -172,7 +169,7 @@ function calcularReceitaPorSemana(pedidosPeriodo, periodo) {
 async function buscarItensVendidos(pedidosPeriodo) {
     const validos = pedidosPeriodo.filter((p) => p.etapa !== 4);
     const listas = await Promise.all(
-        validos.map((p) => window.api.obterItensPedidoPetshop(p.id, petshopIdAtual).catch(() => []))
+        validos.map((p) => window.api.obterItensPedidoPetshop(p.id).catch(() => []))
     );
     return listas.flat();
 }
@@ -206,10 +203,6 @@ function renderizarEstrelas(media) {
     return html;
 }
 
-function formatarMoeda(valor) {
-    return `R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 // =========================
 // Geração do relatório
 // =========================
@@ -228,9 +221,9 @@ async function gerarRelatorio() {
 
     try {
         const [pedidos, agendamentos, perfil] = await Promise.all([
-            window.api.listarPedidosPetshop(petshopIdAtual, { status: "todos" }),
-            window.api.listarAgendamentosPetshop(petshopIdAtual, { status: "todos" }),
-            window.api.obterPerfilPetshop(petshopIdAtual)
+            window.api.listarPedidosPetshop({ status: "todos" }),
+            window.api.listarAgendamentosPetshop({ status: "todos" }),
+            window.api.obterPerfilPetshop()
         ]);
 
         const pedidosPeriodo = pedidos.filter((p) => dentroDoPeriodo(p.criado_em, periodo));
@@ -286,7 +279,7 @@ function template({ resumoFinanceiro, graficoSemanal, rankingProdutos, resumoAge
                     ${rankingProdutos.map((p, i) => `
                         <tr>
                             <td>${i + 1}º</td>
-                            <td>${p.nome}</td>
+                            <td>${escaparHtml(p.nome)}</td>
                             <td>${p.quantidade}</td>
                             <td>${formatarMoeda(p.receita)}</td>
                         </tr>
@@ -302,9 +295,9 @@ function template({ resumoFinanceiro, graficoSemanal, rankingProdutos, resumoAge
             <div class="item-avaliacao">
                 <div class="item-avaliacao-topo">
                     <span class="item-avaliacao-estrelas">${renderizarEstrelas(a.nota)}</span>
-                    <strong>${a.usuario_nome || "Cliente"}</strong>
+                    <strong>${escaparHtml(a.usuario_nome || "Cliente")}</strong>
                 </div>
-                <p class="item-avaliacao-comentario">${a.comentario || "(sem comentário)"}</p>
+                <p class="item-avaliacao-comentario">${escaparHtml(a.comentario || "(sem comentário)")}</p>
             </div>
         `).join("");
 
@@ -386,7 +379,7 @@ async function exportarPdf() {
     try {
         const resultado = await window.api.exportarRelatorioPDF();
         if (resultado.cancelado) {
-            // usuário fechou o diálogo de salvar sem escolher local — não é erro
+            // Usuário fechou o diálogo de salvar.
         } else if (!resultado.sucesso) {
             throw new Error(resultado.mensagem);
         } else {

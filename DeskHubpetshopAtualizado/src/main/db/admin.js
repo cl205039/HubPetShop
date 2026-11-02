@@ -129,15 +129,14 @@ async function listarUsuarios({ busca = "" } = {}) {
 
     const where = condicoes.length ? `WHERE ${condicoes.join(" AND ")}` : "";
 
+    // Subconsultas (e não JOIN) para o total não ser multiplicado por pet.
     const [usuarios] = await pool.query(
         `SELECT u.id, u.nome, u.email, u.telefone, u.cpf, u.tipo_usuario, u.ativo,
-                COALESCE(SUM(pe.total), 0) AS total_gasto,
-                COUNT(DISTINCT pt.id) AS quantidade_pets
+                (SELECT COALESCE(SUM(pe.total), 0) FROM pedidos pe
+                  WHERE pe.usuario_id = u.id AND pe.etapa <> 4) AS total_gasto,
+                (SELECT COUNT(*) FROM pets pt WHERE pt.usuario_id = u.id) AS quantidade_pets
          FROM usuarios u
-         LEFT JOIN pedidos pe ON pe.usuario_id = u.id
-         LEFT JOIN pets pt ON pt.usuario_id = u.id
          ${where}
-         GROUP BY u.id
          ORDER BY u.nome ASC`,
         params
     );
@@ -174,6 +173,7 @@ async function listarPedidos({ status = "todos" } = {}) {
 
     const [pedidos] = await pool.query(
         `SELECT pe.id, pe.usuario_id, pe.loja, pe.total, pe.data, pe.etapa, pe.petshop_id, pe.criado_em,
+                pe.motivo_cancelamento,
                 u.nome AS cliente_nome, u.telefone AS cliente_telefone,
                 pa.nome AS petshop_nome
          FROM pedidos pe
@@ -195,8 +195,54 @@ async function obterItensPedido(pedidoId) {
     return itens;
 }
 
-async function atualizarStatusPedido(id, etapa) {
-    await pool.query("UPDATE pedidos SET etapa = ? WHERE id = ?", [etapa, id]);
+// Devolve ao estoque os itens de um pedido cancelado (na transação de quem chamou).
+async function devolverEstoquePedido(conn, pedidoId) {
+    const [itens] = await conn.query(
+        "SELECT produto_id, quantidade FROM pedido_itens WHERE pedido_id = ? AND produto_id IS NOT NULL",
+        [pedidoId]
+    );
+
+    for (const item of itens) {
+        await conn.query(
+            "UPDATE produtos SET estoque = estoque + ? WHERE id = ?",
+            [item.quantidade, item.produto_id]
+        );
+    }
+}
+
+async function atualizarStatusPedido(id, etapa, motivo = null) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // FOR UPDATE evita devolver o estoque duas vezes.
+        const [[pedido]] = await conn.query("SELECT etapa FROM pedidos WHERE id = ? FOR UPDATE", [id]);
+
+        if (pedido && Number(pedido.etapa) === 4 && Number(etapa) !== 4) {
+            throw new Error("Pedido cancelado não pode mudar de status.");
+        }
+
+        if (pedido && Number(pedido.etapa) === 3 && Number(etapa) !== 3) {
+            throw new Error("Pedido entregue não pode mudar de status.");
+        }
+
+        await conn.query("UPDATE pedidos SET etapa = ? WHERE id = ?", [etapa, id]);
+
+        if (pedido && Number(etapa) === 4 && Number(pedido.etapa) !== 4) {
+            await conn.query(
+                "UPDATE pedidos SET cancelado_em = NOW(), motivo_cancelamento = ? WHERE id = ?",
+                [motivo, id]
+            );
+            await devolverEstoquePedido(conn, id);
+        }
+
+        await conn.commit();
+    } catch (erro) {
+        await conn.rollback();
+        throw erro;
+    } finally {
+        conn.release();
+    }
 }
 
 async function listarAgendamentos({ status = "todos", data = "" } = {}) {
@@ -237,9 +283,7 @@ async function atualizarStatusAgendamento(id, status) {
     await pool.query("UPDATE agendamentos SET status = ? WHERE id = ?", [status, id]);
 }
 
-// Preenche os últimos N meses (incluindo o atual) com 0 quando não há
-// pedido registrado naquele mês, para o gráfico sempre mostrar uma linha
-// do tempo completa em vez de ficar vazio.
+// Preenche com 0 os meses sem pedido, para o gráfico ficar completo.
 function preencherUltimosMeses(linhas, quantidade) {
     const mapa = new Map(linhas.map((l) => [l.mes, Number(l.total)]));
     const resultado = [];
@@ -265,7 +309,7 @@ async function receitaPorMes({ petshopId = null, meses = 6 } = {}) {
     const [linhas] = await pool.query(
         `SELECT DATE_FORMAT(criado_em, '%Y-%m') AS mes, SUM(total) AS total
          FROM pedidos
-         WHERE criado_em IS NOT NULL ${condicaoPetshop}
+         WHERE criado_em IS NOT NULL AND etapa <> 4 ${condicaoPetshop}
          GROUP BY mes`,
         params
     );
@@ -282,13 +326,13 @@ async function obterDashboardAdmin() {
     );
     const [[receitaMes]] = await pool.query(
         `SELECT COALESCE(SUM(total), 0) AS total FROM pedidos
-         WHERE YEAR(criado_em) = YEAR(CURDATE()) AND MONTH(criado_em) = MONTH(CURDATE())`
+         WHERE YEAR(criado_em) = YEAR(CURDATE()) AND MONTH(criado_em) = MONTH(CURDATE()) AND etapa <> 4`
     );
     const [[usuariosAtivos]] = await pool.query(
         "SELECT COUNT(*) AS total FROM usuarios WHERE ativo = 1"
     );
     const [[pedidosCanceladosHoje]] = await pool.query(
-        "SELECT COUNT(*) AS total FROM pedidos WHERE etapa = 4 AND DATE(criado_em) = CURDATE()"
+        "SELECT COUNT(*) AS total FROM pedidos WHERE etapa = 4 AND DATE(cancelado_em) = CURDATE()"
     );
     const [[agendamentosPendentes]] = await pool.query(
         "SELECT COUNT(*) AS total FROM agendamentos WHERE status = 'Pendente'"
@@ -310,16 +354,17 @@ async function obterDashboardAdmin() {
     };
 }
 
-function condicoesPeriodo({ dataInicio, dataFim } = {}) {
-    const condicoes = ["criado_em IS NOT NULL"];
+function condicoesPeriodo({ dataInicio, dataFim } = {}, prefixo = "") {
+    const coluna = `${prefixo}criado_em`;
+    const condicoes = [`${coluna} IS NOT NULL`];
     const params = [];
 
     if (dataInicio) {
-        condicoes.push("DATE(criado_em) >= ?");
+        condicoes.push(`DATE(${coluna}) >= ?`);
         params.push(dataInicio);
     }
     if (dataFim) {
-        condicoes.push("DATE(criado_em) <= ?");
+        condicoes.push(`DATE(${coluna}) <= ?`);
         params.push(dataFim);
     }
 
@@ -329,7 +374,7 @@ function condicoesPeriodo({ dataInicio, dataFim } = {}) {
 async function obterFaturamentoPeriodo(periodo) {
     const { where, params } = condicoesPeriodo(periodo);
     const [[linha]] = await pool.query(
-        `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS quantidade FROM pedidos ${where}`,
+        `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS quantidade FROM pedidos ${where} AND etapa <> 4`,
         params
     );
     return { total: Number(linha.total), quantidade: linha.quantidade };
@@ -348,43 +393,60 @@ async function obterPedidosPorStatus(periodo) {
     return linhas.map((l) => ({ etapa: l.etapa, quantidade: l.quantidade, total: Number(l.total) }));
 }
 
-// "Ranking de serviços" combina duas fontes bem diferentes por falta de um
-// vínculo real no banco entre agendamentos e servicos_petshop: produtos
-// vendidos de verdade (pedido_itens, com receita real) e o catálogo de
-// serviços cadastrados pelos petshops (servicos_petshop, sem contagem de
-// venda ainda — isso só existiria se agendamentos referenciasse
-// servicos_petshop, o que não faz parte do schema atual).
-async function obterRankingServicos({ limite = 10 } = {}) {
+// Ranking do relatório: produtos mais vendidos e serviços mais agendados.
+async function obterRankingServicos({ limite = 10, dataInicio, dataFim } = {}) {
+    const { where, params } = condicoesPeriodo({ dataInicio, dataFim }, "pe.");
+
     const [produtos] = await pool.query(
-        `SELECT nome, SUM(quantidade) AS quantidade_vendida, SUM(quantidade * preco_unitario) AS receita
-         FROM pedido_itens
-         GROUP BY nome
+        `SELECT MAX(pi.nome) AS nome, MAX(ps.nome) AS petshop_nome,
+                SUM(pi.quantidade) AS quantidade_vendida, SUM(pi.quantidade * pi.preco_unitario) AS receita
+         FROM pedido_itens pi
+         JOIN pedidos pe ON pe.id = pi.pedido_id
+         LEFT JOIN petshops ps ON ps.id = pe.petshop_id
+         ${where} AND pe.etapa <> 4
+         GROUP BY pi.produto_id,
+                  CASE WHEN pi.produto_id IS NULL THEN pi.nome END,
+                  CASE WHEN pi.produto_id IS NULL THEN pe.petshop_id END
          ORDER BY receita DESC
          LIMIT ?`,
-        [limite]
+        [...params, limite]
     );
 
-    const [servicos] = await pool.query(
-        `SELECT sp.nome, sp.preco, p.nome AS petshop_nome
-         FROM servicos_petshop sp
-         LEFT JOIN petshops p ON p.id = sp.petshop_id
-         WHERE sp.ativo = 1
-         ORDER BY sp.preco DESC
-         LIMIT ?`,
-        [limite]
+    const dataAgendamento = "COALESCE(DATE(data_hora), LEFT(data, 10))";
+    const condicoesAgendamento = ["status <> 'Cancelado'"];
+    const paramsAgendamento = [];
+    if (dataInicio) {
+        condicoesAgendamento.push(`${dataAgendamento} >= ?`);
+        paramsAgendamento.push(dataInicio);
+    }
+    if (dataFim) {
+        condicoesAgendamento.push(`${dataAgendamento} <= ?`);
+        paramsAgendamento.push(dataFim);
+    }
+
+    const [agendamentos] = await pool.query(
+        `SELECT servico FROM agendamentos WHERE ${condicoesAgendamento.join(" AND ")}`,
+        paramsAgendamento
     );
+
+    const contagem = new Map();
+    agendamentos.forEach((ag) => {
+        (ag.servico || "").split(",").map((s) => s.trim()).filter(Boolean).forEach((nome) => {
+            contagem.set(nome, (contagem.get(nome) || 0) + 1);
+        });
+    });
 
     return {
         produtosMaisVendidos: produtos.map((p) => ({
             nome: p.nome,
+            petshop: p.petshop_nome,
             quantidade: p.quantidade_vendida,
             receita: Number(p.receita)
         })),
-        servicosCadastrados: servicos.map((s) => ({
-            nome: s.nome,
-            preco: Number(s.preco),
-            petshop: s.petshop_nome
-        }))
+        servicosMaisAgendados: [...contagem.entries()]
+            .map(([nome, quantidade]) => ({ nome, quantidade }))
+            .sort((a, b) => b.quantidade - a.quantidade)
+            .slice(0, limite)
     };
 }
 
@@ -392,11 +454,12 @@ async function obterRelatorioVendas(periodo) {
     return {
         faturamento: await obterFaturamentoPeriodo(periodo),
         pedidosPorStatus: await obterPedidosPorStatus(periodo),
-        ranking: await obterRankingServicos({})
+        ranking: await obterRankingServicos(periodo)
     };
 }
 
 module.exports = {
+    DIAS_SEMANA,
     listarPetshops,
     obterPetshopDetalhes,
     aprovarPetshop,
@@ -409,6 +472,7 @@ module.exports = {
     desativarUsuario,
     listarPedidos,
     obterItensPedido,
+    devolverEstoquePedido,
     atualizarStatusPedido,
     listarAgendamentos,
     atualizarStatusAgendamento,

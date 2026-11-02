@@ -1,7 +1,5 @@
 import 'json_utils.dart';
 
-// Um item dentro de um pedido (produto + quantidade + preço no
-// momento da compra).
 class ItemPedido {
   final String nome;
   final int quantidade;
@@ -28,18 +26,15 @@ class ItemPedido {
   double get subtotal => precoUnitario * quantidade;
 }
 
-// Pedido feito no carrinho (produtos), exibido em "Meus Pedidos".
-// `data` fica como texto já formatado para exibição (ex. "Hoje, 14:32"),
-// igual ao mock original — não é um timestamp ISO.
 class Pedido {
   final int? id;
   final int? usuarioId;
   final String loja;
-  final int? petshopId; // id do petshop da compra (null se vier de vários)
+  final int? petshopId;
   final List<ItemPedido> itens;
   final double total;
   final String data;
-  final int etapa; // 0: Confirmado · 1: Preparação · 2: A caminho · 3: Entregue
+  final int etapa;
 
   const Pedido({
     this.id,
@@ -65,9 +60,6 @@ class Pedido {
         etapa: paraInt(json['etapa']) ?? 0,
       );
 
-  // Usado em POST /usuarios/{usuarioId}/pedidos.
-  // `petshopId` vai sempre (igual a Agendamento) — fica `null` só quando
-  // a compra junta itens de petshops diferentes.
   Map<String, dynamic> toJson() => {
         'loja': loja,
         'petshopId': petshopId,

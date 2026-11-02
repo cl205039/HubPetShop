@@ -13,10 +13,6 @@ class HomeVeterinarioPage extends StatefulWidget {
 }
 
 class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
-  // TODO(api): não migrado para a API — um agendamento hoje não guarda
-  // qual veterinário atendeu (agendar.dart nunca pergunta isso), então
-  // não há como popular esta lista com agendamentos reais sem também
-  // mudar o fluxo de agendamento. Fica como mock local por enquanto.
   final List<Map<String, String>> atendimentos = [
     {"pet": "Rex 🐶", "servico": "Consulta", "hora": "09:00"},
     {"pet": "Luna 🐩", "servico": "Vacina", "hora": "10:30"},
@@ -69,21 +65,24 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const HomeVet()),
-                      ),
-                      child: const CircleAvatar(
-                        radius: 25,
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person,
-                            color: Colors.deepPurple, size: 30),
+                    Semantics(
+                      button: true,
+                      label: 'Minha conta',
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomeVet()),
+                        ),
+                        child: const CircleAvatar(
+                          radius: 25,
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person,
+                              color: Colors.deepPurple, size: 30),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -108,6 +107,7 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.logout, color: Colors.white70),
+                      tooltip: 'Sair',
                       onPressed: () {
                         AppData.logout();
                         Navigator.pushReplacement(
@@ -120,7 +120,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
                 ),
               ),
 
-              // Busca por nome
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
@@ -142,7 +141,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
 
               const SizedBox(height: 12),
 
-              // Chips de filtro por serviço
               SizedBox(
                 height: 38,
                 child: ListView.separated(
@@ -182,7 +180,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
 
               const SizedBox(height: 12),
 
-              // Cards de info
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Wrap(
@@ -199,7 +196,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
 
               const SizedBox(height: 12),
 
-              // Próximo atendimento
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
@@ -239,7 +235,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
 
               const SizedBox(height: 12),
 
-              // Área branca
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(20),
@@ -251,7 +246,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Cards Sobre Nós / Sobre o Projeto
                       Row(
                         children: [
                           Expanded(
@@ -328,7 +322,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
 
                       const SizedBox(height: 16),
 
-                      // Título com contador
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -358,7 +351,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
 
                       const SizedBox(height: 12),
 
-                      // Lista ou mensagem vazia
                       Expanded(
                         child: atendimentosFiltrados.isEmpty
                             ? Center(
@@ -415,7 +407,6 @@ class _HomeVeterinarioPageState extends State<HomeVeterinarioPage> {
                               ),
                       ),
 
-                      // Botões
                       Row(
                         children: [
                           Expanded(

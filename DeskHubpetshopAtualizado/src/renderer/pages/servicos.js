@@ -1,6 +1,6 @@
 import { mostrarNotificacao } from "../shared/notificacao.js";
-import { criarBadgeStatus } from "../shared/ui.js";
-import { confirmarAcao } from "../shared/confirmacao.js";
+import { criarBadgeStatus, escaparHtml, formatarMoeda } from "../shared/ui.js";
+import { confirmarAcao, abrirModalFormulario, fecharModalFormulario } from "../shared/confirmacao.js";
 
 const CATEGORIAS_PRESET = ["Banho e Tosa", "Consulta Veterinária", "Hospedagem", "Passeio", "Adestramento"];
 const CATEGORIAS_SERVICO = [...CATEGORIAS_PRESET, "Outro"];
@@ -8,11 +8,8 @@ const CATEGORIAS_SERVICO = [...CATEGORIAS_PRESET, "Outro"];
 let filtroBusca = "";
 let filtroCategoria = "todos";
 let listaAtual = [];
-let petshopIdAtual = null;
 
-export async function montarPaginaServicos(container, petshopId) {
-    petshopIdAtual = petshopId;
-
+export async function montarPaginaServicos(container) {
     const opcoesFiltroCategoria = CATEGORIAS_SERVICO.map((c) => `<option value="${c}">${c}</option>`).join("");
 
     container.innerHTML = `
@@ -25,7 +22,7 @@ export async function montarPaginaServicos(container, petshopId) {
                 </div>
             </div>
             <div class="topo-tabela-container">
-                <input type="text" id="buscaServicoPetshop" class="input-busca-moderno" placeholder="Buscar por nome..." value="${filtroBusca}">
+                <input type="text" id="buscaServicoPetshop" class="input-busca-moderno" placeholder="Buscar por nome..." value="${escaparHtml(filtroBusca)}">
                 <select id="filtroCategoriaServico" class="select-filtro">
                     <option value="todos">Todos</option>
                     ${opcoesFiltroCategoria}
@@ -73,7 +70,7 @@ async function carregarLista() {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;">Carregando serviços...</td></tr>`;
 
     try {
-        listaAtual = await window.api.listarServicos(petshopIdAtual, { busca: filtroBusca, categoria: filtroCategoria });
+        listaAtual = await window.api.listarServicos({ busca: filtroBusca, categoria: filtroCategoria });
         renderizarTabela();
     } catch (erro) {
         console.error("Erro ao carregar serviços:", erro);
@@ -111,11 +108,11 @@ function renderizarTabela() {
 
     tbody.innerHTML = listaAtual.map((s) => `
         <tr>
-            <td><strong>${s.nome}</strong></td>
-            <td>${s.categoria || "—"}</td>
-            <td>${truncarTexto(s.descricao)}</td>
-            <td>R$ ${Number(s.preco).toFixed(2)}</td>
-            <td>${s.duracao || "Não informado"}</td>
+            <td><strong>${escaparHtml(s.nome)}</strong></td>
+            <td>${escaparHtml(s.categoria || "—")}</td>
+            <td>${escaparHtml(truncarTexto(s.descricao))}</td>
+            <td>${formatarMoeda(s.preco)}</td>
+            <td>${escaparHtml(s.duracao || "Não informado")}</td>
             <td>${criarBadgeStatus(s.ativo ? "Ativo" : "Inativo")}</td>
             <td>
                 <div class="acoes-tabela-linha">
@@ -152,8 +149,8 @@ async function alterarStatus(id, ativar) {
 
     try {
         const resultado = ativar
-            ? await window.api.ativarServico(id, petshopIdAtual)
-            : await window.api.desativarServico(id, petshopIdAtual);
+            ? await window.api.ativarServico(id)
+            : await window.api.desativarServico(id);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao(ativar ? "Serviço ativado." : "Serviço desativado.");
         await carregarLista();
@@ -164,7 +161,7 @@ async function alterarStatus(id, ativar) {
 }
 
 // =========================
-// Validação visual (borda verde/vermelha), mesmo padrão do cadastro de petshop
+// Validação visual
 // =========================
 function marcarValido(campo) {
     campo.classList.remove("campo-invalido");
@@ -197,11 +194,6 @@ function configurarValidacao(campo, ehValido) {
 // =========================
 // Modal de cadastro/edição
 // =========================
-function fecharModal() {
-    const overlay = document.getElementById("overlay-servico");
-    if (overlay) overlay.remove();
-}
-
 function templateFormulario(s) {
     const categoriaAtual = s?.categoria || "";
     const ehPreset = CATEGORIAS_PRESET.includes(categoriaAtual);
@@ -216,7 +208,7 @@ function templateFormulario(s) {
     return `
         <div class="grupo-formulario">
             <label>📋 Nome do Serviço:</label>
-            <input type="text" id="servicoNome" value="${s?.nome || ""}" class="input-formulario" required>
+            <input type="text" id="servicoNome" value="${escaparHtml(s?.nome || "")}" class="input-formulario" required>
         </div>
         <div class="grupo-formulario">
             <label>🏷️ Categoria:</label>
@@ -230,20 +222,20 @@ function templateFormulario(s) {
                 class="input-formulario"
                 style="margin-top:8px; ${categoriaSelectValue === "Outro" ? "" : "display:none;"}"
                 placeholder="Digite a categoria personalizada"
-                value="${categoriaOutroValor}"
+                value="${escaparHtml(categoriaOutroValor)}"
             >
         </div>
         <div class="grupo-formulario">
             <label>💰 Preço (R$):</label>
-            <input type="number" min="0" step="0.01" id="servicoPreco" value="${s?.preco ?? ""}" class="input-formulario" required>
+            <input type="number" min="0" step="0.01" id="servicoPreco" value="${escaparHtml(s?.preco ?? "")}" class="input-formulario" required>
         </div>
         <div class="grupo-formulario">
             <label>⏱️ Duração:</label>
-            <input type="text" id="servicoDuracao" value="${s?.duracao || ""}" class="input-formulario" placeholder="Ex.: 30 min, 1h, 2h30">
+            <input type="text" id="servicoDuracao" value="${escaparHtml(s?.duracao || "")}" class="input-formulario" placeholder="Ex.: 30 min, 1h, 2h30">
         </div>
         <div class="grupo-formulario">
             <label>📝 Descrição (opcional):</label>
-            <textarea id="servicoDescricao" class="textarea-formulario" placeholder="Detalhes sobre o serviço...">${s?.descricao || ""}</textarea>
+            <textarea id="servicoDescricao" class="textarea-formulario" placeholder="Detalhes sobre o serviço...">${escaparHtml(s?.descricao || "")}</textarea>
         </div>
         <div class="grupo-formulario toggle-ativo-wrapper">
             <label class="toggle-switch">
@@ -284,25 +276,7 @@ function configurarInteracoesFormulario() {
 }
 
 function abrirModal(titulo, servico, aoSalvar) {
-    fecharModal();
-
-    const overlay = document.createElement("div");
-    overlay.id = "overlay-servico";
-    overlay.className = "overlay-confirmacao";
-    overlay.innerHTML = `
-        <div class="card-confirmacao card-formulario-modal">
-            <button type="button" class="btn-fechar-modal" id="btnFecharModalServico">✕</button>
-            <h3>${titulo}</h3>
-            ${templateFormulario(servico)}
-        </div>
-    `;
-
-    overlay.addEventListener("click", (evento) => {
-        if (evento.target === overlay) fecharModal();
-    });
-    document.body.appendChild(overlay);
-
-    document.getElementById("btnFecharModalServico").addEventListener("click", fecharModal);
+    abrirModalFormulario(titulo, templateFormulario(servico));
     configurarInteracoesFormulario();
     document.getElementById("btnSalvarServico").addEventListener("click", aoSalvar);
 }
@@ -357,10 +331,10 @@ async function salvarNovo() {
     botao.innerText = "Salvando...";
 
     try {
-        const resultado = await window.api.cadastrarServico(petshopIdAtual, dados);
+        const resultado = await window.api.cadastrarServico(dados);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao("Serviço cadastrado com sucesso!");
-        fecharModal();
+        fecharModalFormulario();
         await carregarLista();
     } catch (erro) {
         console.error("Erro ao cadastrar serviço:", erro);
@@ -379,10 +353,10 @@ async function salvarEdicao(id) {
     botao.innerText = "Salvando...";
 
     try {
-        const resultado = await window.api.editarServico(id, petshopIdAtual, dados);
+        const resultado = await window.api.editarServico(id, dados);
         if (!resultado.sucesso) throw new Error(resultado.mensagem);
         mostrarNotificacao("Serviço atualizado com sucesso!");
-        fecharModal();
+        fecharModalFormulario();
         await carregarLista();
     } catch (erro) {
         console.error("Erro ao editar serviço:", erro);

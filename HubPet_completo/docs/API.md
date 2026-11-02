@@ -219,16 +219,33 @@ Response `204`.
 
 ```json
 [
-  { "id": 1, "nome": "Petshop Bom pra Pet", "nota": 4.8, "distanciaKm": 2.4 },
+  { "id": 1, "nome": "Petshop Bom pra Pet", "nota": 4.8, "distanciaKm": 2.4, "lat": -23.5505, "lng": -46.6333 },
   { "id": 2, "nome": "Amigos do Pet", "nota": 4.5, "distanciaKm": 0.9 }
 ]
 ```
 `nota` e `distanciaKm` são **números**, não strings pré-formatadas — o app
 formata (`"4.8"`, `"900 m"` / `"2.4 km"`) do lado dele.
 
+`lat`/`lng` são **opcionais** (coordenadas WGS84 do petshop) — campo novo,
+ainda não implementado no backend atual. Quando presentes, o app calcula a
+distância **real** até o endereço do usuário (fórmula de Haversine, em
+`lib/models/petshop.dart`) comparando com as coordenadas do endereço salvo do
+usuário, que o próprio app geocodifica (texto → lat/lng) chamando a Nominatim
+(OpenStreetMap, API pública e gratuita — `lib/services/geocoding_service.dart`,
+mesmo espírito do ViaCEP já usado pro CEP). Isso substitui o `distanciaKm`
+estático na exibição e na ordenação/filtro por distância da lista de
+petshops. Sem `lat`/`lng` (petshop sem essas colunas ainda, ou geocoding sem
+resultado), o app cai automaticamente no `distanciaKm` de sempre — **não é
+obrigatório preencher esses campos pra API continuar funcionando**.
+
+Se for implementar: a coluna fica no cadastro do petshop (o dono/admin
+informa o endereço do estabelecimento; geocodificar isso também pode ser
+feito do lado do servidor, uma vez, ao cadastrar — não precisa repetir a
+cada request).
+
 ### `GET /petshops/{id}`
 
-Um único petshop, mesmo formato.
+Um único petshop, mesmo formato (incluindo `lat`/`lng`, se houver).
 
 ---
 

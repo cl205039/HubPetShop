@@ -1,22 +1,19 @@
+import { ligarNavegacao, formatarMoeda } from "../shared/ui.js";
+
 export async function montarDashboardAdmin(container) {
     container.innerHTML = "<p style='padding:20px;'>Carregando dashboard...</p>";
 
     try {
         const dados = await window.api.obterDashboardAdmin();
         container.innerHTML = template(dados);
+        ligarNavegacao(container);
     } catch (erro) {
         console.error("Erro ao carregar dashboard admin:", erro);
         container.innerHTML = "<p style='color:red; padding:20px;'>Erro ao carregar dashboard.</p>";
     }
 }
 
-function formatarMoeda(valor) {
-    return `R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// Os alertas vêm prontos do backend como texto ("N petshop(s) aguardando
-// aprovação") — como não dá pra mexer no backend aqui, o ajuste de
-// nomenclatura pra "parceiro" é feito só na exibição, por texto mesmo.
+// Ajusta o texto dos alertas na exibição.
 function ajustarTextoParceiro(texto) {
     return texto.replace(/petshop\(s\)/gi, "parceiro(s)").replace(/\bpetshop\b/gi, "parceiro");
 }
@@ -75,8 +72,8 @@ function template(d) {
                 ${d.alertas.map((a) => `<li class="alerta-item">⚠️ ${ajustarTextoParceiro(a)}</li>`).join("")}
             </ul>
             <div class="dashboard-actions">
-                <button class="btn-aprovar" onclick="carregarPagina('petshops')">Ver Parceiros</button>
-                <button class="btn-secundario" onclick="carregarPagina('relatorios')">Ver Relatórios</button>
+                <button class="btn-aprovar" data-pagina="petshops">Ver Parceiros</button>
+                <button class="btn-secundario" data-pagina="relatorios">Ver Relatórios</button>
             </div>
         </div>
     `;

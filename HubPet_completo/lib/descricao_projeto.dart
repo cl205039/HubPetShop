@@ -17,7 +17,6 @@ class DescricaoProjetoPage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
@@ -25,6 +24,7 @@ class DescricaoProjetoPage extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
                     ),
                     const Text(
                       'Sobre o Projeto',
@@ -47,11 +47,15 @@ class DescricaoProjetoPage extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.all(25),
                     children: [
-                      // Logo grande
                       Center(
                         child: Container(
                           child: Center(
-                            child: Image.asset('assets/images/imagem.jpg.png', height: 150, width: 150,),
+                            child: Image.asset(
+                              'assets/images/imagem.jpg.png',
+                              height: 150,
+                              width: 150,
+                              excludeFromSemantics: true,
+                            ),
                           ),
                         ),
                       ),
@@ -78,7 +82,6 @@ class DescricaoProjetoPage extends StatelessWidget {
 
                       const SizedBox(height: 25),
 
-                      // Descrição
                       _secao(
                         emoji: '📌',
                         titulo: 'O que é o HubPet?',
@@ -89,7 +92,6 @@ class DescricaoProjetoPage extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      // Cards de funcionalidades
                       const Text(
                         '⚡ Funcionalidades',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -134,7 +136,6 @@ class DescricaoProjetoPage extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      // Destaque colorido
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
