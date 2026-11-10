@@ -17,6 +17,12 @@ export const UsuarioService = {
   redefinirSenha(email, novaSenha) {
     return ApiClient.post('usuarios/redefinir-senha', { email, novaSenha });
   },
+
+   
+  atualizar(id, dados) {
+    return ApiClient.put(`usuarios/${id}`, dados);
+  },
+
   buscarPorId(id) {
     return ApiClient.get(`usuarios/${id}`);
   },

@@ -1,7 +1,8 @@
+
 [<?php
 
 // Configurações do banco de dados local
-define('DB_HOST',     '192.168.1.180');//COTIL CASO RODE Na MAQUINA DA NAYARA
+define('DB_HOST',     '172.20.10.6');//COTIL CASO RODE Na MAQUINA DA NAYARA
 //define('DB_HOST',     'localhost'); //COMPUTADOR LAVIGNIA
 define('DB_USUARIO',  'root');       // usuário padrão do XAMPP/WAMP
 define('DB_SENHA', '');           // senha padrão local é vazia
