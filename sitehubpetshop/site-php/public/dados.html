@@ -7,6 +7,14 @@
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/layout.css">
 <link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .campo input:disabled,
+  .campo select:disabled { opacity: .75; cursor: default; }
+  .acoes-dados { display: flex; gap: 12px; margin-top: 8px; }
+  .acoes-dados > button { flex: 1; width: auto; }
+  .acoes-dados .btn-outline { color: var(--cor-texto-secundario); }
+  [hidden] { display: none !important; }
+</style>
 </head>
 <body class="fundo-gradiente-escuro">
 
@@ -18,15 +26,26 @@
   </div>
 
   <div class="painel-branco">
-    <div class="campo"><label>Nome completo</label><input type="text" id="nome" disabled></div>
-    <div class="campo"><label>CPF</label><input type="text" id="cpf" disabled></div>
-    <div class="campo"><label>E-mail</label><input type="text" id="email" disabled></div>
-    <div class="campo"><label>Telefone</label><input type="text" id="telefone" disabled></div>
-    <div class="campo"><label>Tipo de conta</label><input type="text" id="tipoUsuario" disabled></div>
-    <p style="font-size:13px; color:var(--cor-texto-secundario);">
-      A edição de dados cadastrais não está disponível nesta versão — fale
-      com o suporte para alterações.
-    </p>
+    <form id="form-dados" novalidate>
+      <div class="campo"><label for="nome">Nome completo</label><input type="text" id="nome" name="nome" disabled></div>
+      <div class="campo"><label for="cpf">CPF</label><input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" disabled></div>
+      <div class="campo"><label for="email">E-mail</label><input type="email" id="email" name="email" disabled></div>
+      <div class="campo"><label for="telefone">Telefone</label><input type="text" id="telefone" name="telefone" placeholder="(11) 90000-0000" disabled></div>
+      <div class="campo">
+        <label for="tipoUsuario">Tipo de conta</label>
+        <select id="tipoUsuario" name="tipoUsuario" disabled>
+          <option value="pessoafisica">Pessoa Física</option>
+          <option value="pessoajuridica">Pessoa Jurídica</option>
+        </select>
+      </div>
+
+      <button type="button" id="btn-editar" class="btn-primario">EDITAR DADOS</button>
+
+      <div id="acoes-edicao" class="acoes-dados" hidden>
+        <button type="button" id="btn-cancelar" class="btn-outline">CANCELAR</button>
+        <button type="submit" id="btn-salvar" class="btn-primario">SALVAR</button>
+      </div>
+    </form>
   </div>
 </div>
 
